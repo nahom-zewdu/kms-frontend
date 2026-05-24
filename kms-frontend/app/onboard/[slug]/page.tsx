@@ -13,23 +13,31 @@ interface Props {
 
 export default async function PlaybookPage({ params }: Props) {
   const { slug } = await params;
-  const roleKey = slug.replace(/-/g, ' ');
+  const roleKey = slug.toLowerCase();
 
-  // Fetch real playbook from Supabase
+  // Fetch the latest active playbook for this role from Supabase
   const { data: playbook, error } = await supabase
     .from('playbooks')
     .select('*')
     .eq('role', roleKey)
     .eq('is_active', true)
-    .single();
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  console.log('Fetched playbook:', playbook, 'Error:', error);
 
   if (error || !playbook) {
     notFound();
   }
 
+  const playbookContent = typeof playbook.content === 'string'
+    ? JSON.parse(playbook.content)
+    : playbook.content;
+
   return (
     <PlaybookViewer 
-      playbook={playbook.content} 
+      playbook={playbookContent} 
       role={roleKey} 
       playbookId={playbook.id}
     />
