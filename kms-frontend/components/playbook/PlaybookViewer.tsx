@@ -8,12 +8,12 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, ReactNode } from 'react';
 import { Target, MessageSquare } from 'lucide-react';
 
 interface Section {
   title: string;
-  content: string;
+  content: string | Record<string, any> | Array<any>;
 }
 
 interface PlaybookViewerProps {
@@ -24,6 +24,37 @@ interface PlaybookViewerProps {
   };
   role: string;
   playbookId: string;
+}
+
+function renderSectionContent(content: string | Record<string, any> | Array<any>): ReactNode {
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return (
+      <div className="space-y-4">
+        {content.map((item, idx) => (
+          <div key={idx}>{renderSectionContent(item)}</div>
+        ))}
+      </div>
+    );
+  }
+
+  if (content && typeof content === 'object') {
+    return (
+      <div className="space-y-4">
+        {Object.entries(content).map(([key, value]) => (
+          <div key={key} className="space-y-1">
+            <div className="font-semibold">{key}</div>
+            <div>{renderSectionContent(value)}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerProps) {
@@ -103,7 +134,7 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
               {section.title}
             </h2>
             <div className="prose prose-zinc prose-invert text-[17px] leading-relaxed">
-              {section.content}
+              {renderSectionContent(section.content)}
             </div>
           </div>
         ))}
