@@ -5,11 +5,14 @@ import { notFound } from 'next/navigation';
 import { PlaybookViewer } from '@/components/playbook/PlaybookViewer';
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function PlaybookPage({ params }: Props) {
-  const { slug } = params;
+  const { slug } = await params;
+  if (!slug) {
+    notFound();
+  }
   const role = slug.replace(/-/g, ' ');
 
   // TODO: Replace with real Supabase fetch later
