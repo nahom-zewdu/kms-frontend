@@ -8,8 +8,16 @@
 
 'use client';
 
-import React, { useState, ReactNode } from 'react';
+import React, { useEffect, useRef, useState, ReactNode } from 'react';
 import { Target, MessageSquare } from 'lucide-react';
+
+type ChatMessage = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  sources?: string[];
+  confidence?: string;
+  reasoning?: string;
+};
 
 interface Section {
   title: string;
@@ -58,37 +66,52 @@ function renderSectionContent(content: string | Record<string, any> | Array<any>
 }
 
 export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerProps) {
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([
-    { role: 'assistant', content: "Hi! I'm KMS. Ask me anything about this playbook." }
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: playbook.welcome_message || "Hi! I'm KMS. Ask me anything about this playbook." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [messages, isLoading]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInput('');
     setIsLoading(true);
 
-    // Call your existing query engine via API
-    const res = await fetch('/api/query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        question: userMessage,
-        context: `Playbook: ${playbook.title}` 
-      })
-    });
+    try {
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          question: userMessage,
+          context: `Playbook: ${playbook.title}`
+        })
+      });
 
-    const data = await res.json();
-    
-    setMessages(prev => [...prev, { 
-      role: 'assistant', 
-      content: data.answer || "I couldn't find relevant information." 
-    }]);
-    setIsLoading(false);
+      const data = await res.json();
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.answer || "I couldn't find relevant information.",
+        sources: Array.isArray(data.sources) ? data.sources : [],
+        confidence: data.confidence,
+        reasoning: data.reasoning,
+      }] );
+    } catch (error) {
+      console.error('Chat query failed:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "Sorry, I couldn't process that right now. Please try again later.",
+      }] );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -152,11 +175,19 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-white text-black' : 'bg-zinc-800'}`}>
-                  {msg.content}
+                  <div>{msg.content}</div>
+                  {(msg.confidence || msg.sources?.length || msg.reasoning) && (
+                    <div className="mt-3 text-[11px] text-zinc-400 space-y-2">
+                      {msg.confidence && <div><span className="font-medium text-zinc-300">Confidence:</span> {msg.confidence}</div>}
+                      {msg.sources?.length ? <div><span className="font-medium text-zinc-300">Sources:</span> {msg.sources.join(', ')}</div> : null}
+                      {msg.reasoning ? <div><span className="font-medium text-zinc-300">Reasoning:</span> {msg.reasoning}</div> : null}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             {isLoading && <div className="text-zinc-500">Thinking...</div>}
+            <div ref={chatEndRef} />
           </div>
 
           <div className="flex gap-2">
