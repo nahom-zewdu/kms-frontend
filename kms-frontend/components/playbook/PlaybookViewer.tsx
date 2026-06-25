@@ -171,12 +171,13 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
           </div>
         ))}
 
-        {/* Codebase Visualizer */}
+        {/* Codebase Visualizer Section */}
         <div id="codebase" className="mb-24 scroll-mt-20">
           <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6 flex items-center gap-3">
             <FileText className="w-8 h-8" /> Codebase Explorer
           </h2>
-          <div className="h-[620px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden relative">
+          
+          <div className="h-[680px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden relative">
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -189,7 +190,10 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
               <Background color="#27272a" />
             </ReactFlow>
           </div>
-          <p className="text-xs text-zinc-500 mt-3 text-center">Nodes represent files from your repository. More interactions coming soon.</p>
+
+          <p className="text-xs text-zinc-500 mt-3 text-center">
+            Nodes show files from your repository. Click a node to see context in the sidebar.
+          </p>
         </div>
       </div>
 
