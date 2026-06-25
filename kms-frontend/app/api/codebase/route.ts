@@ -1,49 +1,50 @@
 // app/api/codebase/route.ts
-// This API route fetches the codebase files from Supabase and returns them as React Flow nodes for visualization in the PlaybookViewer component.
-
+// app/api/codebase/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
-  const role = request.nextUrl.searchParams.get('role');
+  const role = request.nextUrl.searchParams.get('role') || '';
 
   try {
-    // Fetch files from the physical codebase layer
     const { data: files, error } = await supabase
       .from('codebase_files')
-      .select('file_path, file_name, language, metadata')
-      .order('file_path')
-      .limit(80);
+      .select('file_path, file_name, language, metadata, last_author')
+      .order('file_path');
 
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json({ error: 'Failed to load codebase' }, { status: 500 });
-    }
+    if (error) throw error;
 
-    // Transform into React Flow nodes
-    const nodes = files?.map((file, index) => ({
-      id: file.file_path,
-      type: 'default',
-      position: { 
-        x: (index % 6) * 240, 
-        y: Math.floor(index / 6) * 110 
-      },
-      data: { 
-        label: file.file_name,
-        fullPath: file.file_path,
-        language: file.language
-      },
-      style: { 
-        background: '#18181b', 
-        color: '#e4e4e7', 
-        border: '1px solid #3f3f46',
-        width: 180 
-      },
-    })) || [];
+    // Group by top-level directory for better hierarchy
+    const nodes = files?.map((file, index) => {
+      const parts = file.file_path.split('/');
+      const folder = parts.length > 1 ? parts[0] : 'root';
 
-    return NextResponse.json({ nodes });
+      return {
+        id: file.file_path,
+        type: 'default',
+        position: { 
+          x: (index % 5) * 260, 
+          y: Math.floor(index / 5) * 120 
+        },
+        data: { 
+          label: file.file_name,
+          fullPath: file.file_path,
+          language: file.language,
+          author: file.last_author,
+          folder: folder
+        },
+        style: { 
+          background: '#18181b', 
+          color: '#e4e4e7', 
+          border: '1px solid #3f3f46',
+          width: 220,
+        },
+      };
+    }) || [];
+
+    return NextResponse.json({ nodes, total: files?.length || 0 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ nodes: [], error: 'Failed to load codebase' }, { status: 500 });
   }
 }
