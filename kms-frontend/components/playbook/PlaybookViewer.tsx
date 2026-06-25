@@ -13,7 +13,7 @@ import ReactFlow, {
   useEdgesState,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Target, MessageSquare, FileText, Users } from 'lucide-react';
+import { Target, MessageSquare, FileText, Clock, User } from 'lucide-react';
 
 type ChatMessage = {
   role: 'user' | 'assistant';
@@ -21,17 +21,10 @@ type ChatMessage = {
   sources?: string[];
 };
 
-interface Section {
-  title: string;
-  content: string | Record<string, any> | Array<any>;
-}
+interface Section { title: string; content: any; }
 
 interface PlaybookViewerProps {
-  playbook: {
-    title: string;
-    welcome_message: string;
-    sections: Section[];
-  };
+  playbook: { title: string; welcome_message: string; sections: Section[] };
   role: string;
   playbookId: string;
 }
@@ -58,42 +51,38 @@ function renderSectionContent(content: any): ReactNode {
 
 export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: playbook.welcome_message || "Hi! Ask me anything about this playbook or the codebase." },
+    { role: 'assistant', content: playbook.welcome_message || "Hi! Explore the codebase or ask me anything." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // React Flow
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  // Load codebase files
+  // Load codebase
   useEffect(() => {
     const loadCodebase = async () => {
-      try {
-        const res = await fetch(`/api/codebase?role=${encodeURIComponent(role)}`);
-        const data = await res.json();
-        
-        if (data.nodes && data.nodes.length > 0) {
-          setNodes(data.nodes);
-        } else {
-          // Fallback nodes if no data
-          setNodes([{
-            id: 'no-files',
-            type: 'default',
-            position: { x: 100, y: 100 },
-            data: { label: 'No files indexed yet' },
-            style: { background: '#18181b', color: '#e4e4e7' }
-          }]);
-        }
-      } catch (err) {
-        console.error('Failed to load codebase:', err);
+      const res = await fetch(`/api/codebase?role=${encodeURIComponent(role)}`);
+      const data = await res.json();
+      
+      if (data.nodes) {
+        setNodes(data.nodes);
       }
     };
-
     loadCodebase();
   }, [role]);
+
+  const onNodeClick = useCallback((event: any, node: any) => {
+    setSelectedFile(node.data);
+    
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `**${node.data.fullPath}**\n\nLanguage: ${node.data.language || 'Unknown'}\nLast modified by: ${node.data.author || 'Unknown'}\n\nWhat would you like to know about this file?`
+    }]);
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -122,14 +111,6 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
       setIsLoading(false);
     }
   };
-
-  const onNodeClick = useCallback((event: any, node: any) => {
-    // Open context in chat or dedicated panel
-    setMessages(prev => [...prev, {
-      role: 'assistant',
-      content: `Selected: ${node.data.fullPath}\n\nThis file is part of the ${node.data.folder} module.`
-    }]);
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f4f4f5] flex">
@@ -184,16 +165,15 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
           <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6 flex items-center gap-3">
             <FileText className="w-8 h-8" /> Codebase Explorer
           </h2>
-          
+
           <div className="h-[680px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden relative">
             <ReactFlow
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
-              fitView
-              attributionPosition="bottom-left"
               onNodeClick={onNodeClick}
+              fitView
             >
               <Controls />
               <Background color="#27272a" />
@@ -214,6 +194,25 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
             <div className="font-medium">Ask KMS</div>
           </div>
 
+          {/* File Context Panel */}
+          {selectedFile && (
+            <div className="bg-zinc-900 rounded-3xl p-6">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5" /> {selectedFile.label}
+              </h3>
+              <div className="space-y-4 text-sm">
+                <div><span className="text-zinc-500">Path:</span> {selectedFile.fullPath}</div>
+                <div><span className="text-zinc-500">Language:</span> {selectedFile.language}</div>
+                {selectedFile.author && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" /> Last changed by {selectedFile.author}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          
           <div className="h-[520px] bg-zinc-900 rounded-3xl p-5 overflow-auto mb-4 space-y-4 text-sm">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
