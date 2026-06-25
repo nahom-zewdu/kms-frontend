@@ -123,6 +123,14 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
     }
   };
 
+  const onNodeClick = useCallback((event: any, node: any) => {
+    // Open context in chat or dedicated panel
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `Selected: ${node.data.fullPath}\n\nThis file is part of the ${node.data.folder} module.`
+    }]);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f4f4f5] flex">
       {/* Left Navigation */}
@@ -185,6 +193,7 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
               onEdgesChange={onEdgesChange}
               fitView
               attributionPosition="bottom-left"
+              onNodeClick={onNodeClick}
             >
               <Controls />
               <Background color="#27272a" />
