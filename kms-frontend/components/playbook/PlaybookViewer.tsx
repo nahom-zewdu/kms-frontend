@@ -64,27 +64,32 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // React Flow State
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  // React Flow
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  // Load codebase files for visualizer
+  // Load codebase files
   useEffect(() => {
     const loadCodebase = async () => {
-      const { data: files } = await fetch(`/api/codebase?role=${role}`).then(r => r.json());
-
-      const flowNodes: Node[] = files.map((file: any, i: number) => ({
-        id: file.file_path,
-        type: 'default',
-        position: { x: (i % 6) * 220, y: Math.floor(i / 6) * 140 },
-        data: { label: file.file_name },
-        style: { background: '#18181b', color: '#e4e4e7', border: '1px solid #3f3f46' },
-      }));
-
-      const flowEdges: Edge[] = []; // Can add PART_OF edges later
-
-      setNodes(flowNodes);
-      setEdges(flowEdges);
+      try {
+        const res = await fetch(`/api/codebase?role=${encodeURIComponent(role)}`);
+        const data = await res.json();
+        
+        if (data.nodes && data.nodes.length > 0) {
+          setNodes(data.nodes);
+        } else {
+          // Fallback nodes if no data
+          setNodes([{
+            id: 'no-files',
+            type: 'default',
+            position: { x: 100, y: 100 },
+            data: { label: 'No files indexed yet' },
+            style: { background: '#18181b', color: '#e4e4e7' }
+          }]);
+        }
+      } catch (err) {
+        console.error('Failed to load codebase:', err);
+      }
     };
 
     loadCodebase();
@@ -166,22 +171,25 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
           </div>
         ))}
 
-        {/* Codebase Visualizer Section */}
+        {/* Codebase Visualizer */}
         <div id="codebase" className="mb-24 scroll-mt-20">
-          <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6">Codebase Explorer</h2>
-          <div className="h-[620px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden">
+          <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6 flex items-center gap-3">
+            <FileText className="w-8 h-8" /> Codebase Explorer
+          </h2>
+          <div className="h-[620px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden relative">
             <ReactFlow
               nodes={nodes}
               edges={edges}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               fitView
+              attributionPosition="bottom-left"
             >
               <Controls />
               <Background color="#27272a" />
             </ReactFlow>
           </div>
-          <p className="text-xs text-zinc-500 mt-3 text-center">Click nodes to explore. More interactions coming soon.</p>
+          <p className="text-xs text-zinc-500 mt-3 text-center">Nodes represent files from your repository. More interactions coming soon.</p>
         </div>
       </div>
 
