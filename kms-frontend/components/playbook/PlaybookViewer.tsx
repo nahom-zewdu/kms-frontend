@@ -1,22 +1,24 @@
 // components/playbook/PlaybookViewer.tsx
-// This component is responsible for rendering the playbook content and providing an embedded chat interface for users to ask questions about the playbook. 
-// It receives the playbook data, role, and playbook ID as props, and manages the chat state locally. 
-// The chat interface allows users to interact with KMS by sending questions, which are then processed by an API route that queries the relevant information from the playbook context. 
-// The component uses React's useState hook to manage the chat messages, user input, and loading state. 
-// When a user sends a message, it updates the chat state and makes a POST request to the /api/query endpoint with the user's question and the playbook context. 
-// The response from the API is then added to the chat messages, allowing for an interactive experience as users can ask follow-up questions based on the playbook content.
-
+// This component is responsible for rendering the onboarding playbook viewer. 
+// It displays the playbook's title, welcome message, and sections in a structured format.
 'use client';
 
-import React, { useEffect, useRef, useState, ReactNode } from 'react';
-import { Target, MessageSquare } from 'lucide-react';
+import React, { useEffect, useRef, useState, ReactNode, useCallback } from 'react';
+import ReactFlow, {
+  Node,
+  Edge,
+  Controls,
+  Background,
+  useNodesState,
+  useEdgesState,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import { Target, MessageSquare, FileText, Users } from 'lucide-react';
 
 type ChatMessage = {
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant';
   content: string;
   sources?: string[];
-  confidence?: string;
-  reasoning?: string;
 };
 
 interface Section {
@@ -34,54 +36,65 @@ interface PlaybookViewerProps {
   playbookId: string;
 }
 
-function renderSectionContent(content: string | Record<string, any> | Array<any>): ReactNode {
-  if (typeof content === 'string') {
-    return content;
-  }
-
+function renderSectionContent(content: any): ReactNode {
+  if (typeof content === 'string') return <p className="text-zinc-300">{content}</p>;
   if (Array.isArray(content)) {
-    return (
-      <div className="space-y-4">
-        {content.map((item, idx) => (
-          <div key={idx}>{renderSectionContent(item)}</div>
-        ))}
-      </div>
-    );
+    return <div className="space-y-4">{content.map((item, i) => <div key={i}>{renderSectionContent(item)}</div>)}</div>;
   }
-
   if (content && typeof content === 'object') {
     return (
       <div className="space-y-4">
         {Object.entries(content).map(([key, value]) => (
-          <div key={key} className="space-y-1">
-            <div className="font-semibold">{key}</div>
+          <div key={key}>
+            <div className="font-semibold text-white mb-1">{key}</div>
             <div>{renderSectionContent(value)}</div>
           </div>
         ))}
       </div>
     );
   }
-
   return null;
 }
 
 export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: playbook.welcome_message || "Hi! I'm KMS. Ask me anything about this playbook." }
+    { role: 'assistant', content: playbook.welcome_message || "Hi! Ask me anything about this playbook or the codebase." },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // React Flow State
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  // Load codebase files for visualizer
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [messages, isLoading]);
+    const loadCodebase = async () => {
+      const { data: files } = await fetch(`/api/codebase?role=${role}`).then(r => r.json());
+
+      const flowNodes: Node[] = files.map((file: any, i: number) => ({
+        id: file.file_path,
+        type: 'default',
+        position: { x: (i % 6) * 220, y: Math.floor(i / 6) * 140 },
+        data: { label: file.file_name },
+        style: { background: '#18181b', color: '#e4e4e7', border: '1px solid #3f3f46' },
+      }));
+
+      const flowEdges: Edge[] = []; // Can add PART_OF edges later
+
+      setNodes(flowNodes);
+      setEdges(flowEdges);
+    };
+
+    loadCodebase();
+  }, [role]);
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage = input.trim();
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const userMsg = input.trim();
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setInput('');
     setIsLoading(true);
 
@@ -89,26 +102,17 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          question: userMessage,
-          context: `Playbook: ${playbook.title}`
-        })
+        body: JSON.stringify({ question: userMsg, context: `Playbook: ${playbook.title}` }),
       });
-
       const data = await res.json();
+
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.answer || "I couldn't find relevant information.",
-        sources: Array.isArray(data.sources) ? data.sources : [],
-        confidence: data.confidence,
-        reasoning: data.reasoning,
-      }] );
-    } catch (error) {
-      console.error('Chat query failed:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "Sorry, I couldn't process that right now. Please try again later.",
-      }] );
+        sources: data.sources,
+      }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, something went wrong." }]);
     } finally {
       setIsLoading(false);
     }
@@ -117,13 +121,13 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f4f4f5] flex">
       {/* Left Navigation */}
-      <div className="w-72 border-r border-zinc-800 p-8 flex-shrink-0">
+      <div className="w-72 border-r border-zinc-800 p-8 flex-shrink-0 overflow-auto">
         <div className="mb-12">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 bg-white rounded" />
-            <span className="text-2xl font-semibold tracking-tighter">KMS</span>
+            <div className="w-6 h-6 bg-white rounded" />
+            <span className="text-3xl font-semibold tracking-tighter">KMS</span>
           </div>
-          <p className="text-xs text-zinc-500 mt-1">ONBOARD</p>
+          <p className="text-xs text-zinc-500 mt-1">ONBOARDING</p>
         </div>
 
         <nav className="space-y-1">
@@ -137,18 +141,18 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
               {section.title}
             </a>
           ))}
+          <a href="#codebase" className="group flex items-center gap-3 px-4 py-3.5 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
+            <FileText className="w-4 h-4 text-zinc-500" />
+            Codebase Map
+          </a>
         </nav>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-3xl mx-auto px-12 py-16">
+      <div className="flex-1 max-w-4xl mx-auto px-12 py-16 overflow-auto">
         <div className="mb-16">
-          <h1 className="text-6xl font-semibold tracking-tighter leading-none">
-            {playbook.title}
-          </h1>
-          <p className="mt-8 text-[17px] leading-relaxed text-zinc-400">
-            {playbook.welcome_message}
-          </p>
+          <h1 className="text-6xl font-semibold tracking-tighter leading-none">{playbook.title}</h1>
+          <p className="mt-8 text-[17px] leading-relaxed text-zinc-400">{playbook.welcome_message}</p>
         </div>
 
         {playbook.sections.map((section, i) => (
@@ -161,6 +165,24 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
             </div>
           </div>
         ))}
+
+        {/* Codebase Visualizer Section */}
+        <div id="codebase" className="mb-24 scroll-mt-20">
+          <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6">Codebase Explorer</h2>
+          <div className="h-[620px] bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              fitView
+            >
+              <Controls />
+              <Background color="#27272a" />
+            </ReactFlow>
+          </div>
+          <p className="text-xs text-zinc-500 mt-3 text-center">Click nodes to explore. More interactions coming soon.</p>
+        </div>
       </div>
 
       {/* Embedded Chat Sidebar */}
@@ -175,18 +197,11 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-white text-black' : 'bg-zinc-800'}`}>
-                  <div>{msg.content}</div>
-                  {(msg.confidence || msg.sources?.length || msg.reasoning) && (
-                    <div className="mt-3 text-[11px] text-zinc-400 space-y-2">
-                      {msg.confidence && <div><span className="font-medium text-zinc-300">Confidence:</span> {msg.confidence}</div>}
-                      {msg.sources?.length ? <div><span className="font-medium text-zinc-300">Sources:</span> {msg.sources.join(', ')}</div> : null}
-                      {msg.reasoning ? <div><span className="font-medium text-zinc-300">Reasoning:</span> {msg.reasoning}</div> : null}
-                    </div>
-                  )}
+                  {msg.content}
                 </div>
               </div>
             ))}
-            {isLoading && <div className="text-zinc-500">Thinking...</div>}
+            {isLoading && <div className="text-zinc-500 pl-4">Thinking...</div>}
             <div ref={chatEndRef} />
           </div>
 
@@ -196,13 +211,13 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="Ask anything about this playbook..."
+              placeholder="Ask about any file or concept..."
               className="flex-1 bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-2xl px-5 py-3 text-sm outline-none"
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || isLoading}
-              className="bg-white text-black px-6 rounded-2xl font-medium hover:bg-zinc-200 transition"
+              className="bg-white text-black px-6 rounded-2xl font-medium hover:bg-zinc-200 transition disabled:opacity-50"
             >
               Send
             </button>
