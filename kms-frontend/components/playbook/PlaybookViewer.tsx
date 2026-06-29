@@ -141,6 +141,20 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
               </div>
             </div>
 
+            {/* Request Flows */}
+            <div className="mt-12">
+              <h3 className="text-xl font-medium mb-6">Key Request Flows</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {visualizerData?.request_flows?.map((flow: any, i: number) => (
+                  <div key={i} className="bg-zinc-900 rounded-3xl p-6">
+                    <div className="font-medium">{flow.name}</div>
+                    <div className="text-sm text-zinc-400 mt-2">{flow.description}</div>
+                    <div className="mt-4 text-xs text-zinc-500">{flow.steps.join(" → ")}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
             {/* Architecture Map */}
             <div>
               <h3 className="text-xl font-medium mb-6">Architecture Overview</h3>
