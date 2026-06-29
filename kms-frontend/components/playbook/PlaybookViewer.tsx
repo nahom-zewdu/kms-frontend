@@ -25,7 +25,7 @@ interface PlaybookViewerProps {
 
 export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: playbook.welcome_message || "Hi! Ask me anything about this playbook or the codebase." }
+    { role: 'assistant', content: playbook.welcome_message || "Hi! Ask me anything about this playbook." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +39,7 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
   useEffect(() => {
     const loadVisualizer = async () => {
       try {
-        const res = await fetch(`http://0.0.0.0:8000/visualizer?role=${encodeURIComponent(role)}`);
+        const res = await fetch(`http://localhost:8000/visualizer?role=${encodeURIComponent(role)}`);
         const data = await res.json();
         setVisualizerData(data.data || {});
       } catch (e) {
@@ -75,9 +75,9 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f4f4f5] flex">
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f4f4f5] flex relative">
       {/* Left Navigation */}
-      <div className="w-72 border-r border-zinc-800 p-8 flex-shrink-0">
+      <div className="w-72 border-r border-zinc-800 p-8 flex-shrink-0 overflow-auto">
         <div className="mb-12">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 bg-white rounded" />
@@ -98,8 +98,8 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
         </nav>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 max-w-5xl mx-auto px-12 py-16 overflow-auto">
+      {/* Main Content */}
+      <div className="flex-1 max-w-4xl mx-auto px-12 py-16 overflow-auto">
         {/* Playbook Sections */}
         {playbook.sections.map((section, i) => (
           <div key={i} id={`section-${i}`} className="mb-24 scroll-mt-20">
@@ -112,7 +112,7 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
           </div>
         ))}
 
-        {/* Visualizer */}
+        {/* Visualizer Section */}
         <div id="visualizer" className="mb-24 scroll-mt-20">
           <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6">Codebase Explorer</h2>
 
@@ -124,10 +124,10 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
                 {visualizerData?.architecture?.map((layer: any, i: number) => (
                   <div 
                     key={i} 
-                    className="mb-4 p-5 bg-zinc-950 rounded-2xl cursor-pointer hover:bg-zinc-800 transition-all"
+                    className="mb-4 p-5 bg-zinc-950 rounded-2xl cursor-pointer hover:bg-zinc-800 transition-all border border-transparent hover:border-zinc-700"
                     onClick={() => setSelectedItem(layer)}
                   >
-                    <div className="font-semibold">{layer.name}</div>
+                    <div className="font-semibold text-lg">{layer.name}</div>
                     <div className="text-sm text-zinc-400 mt-1">{layer.description}</div>
                   </div>
                 ))}
@@ -152,42 +152,52 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
                 ))}
               </div>
             </div>
-
-            {/* Right: Context Panel (as requested) */}
-            <div className="lg:col-span-7">
-              <div className="bg-zinc-900 rounded-3xl p-8 min-h-[520px] sticky top-8">
-                {selectedItem ? (
-                  <div className="space-y-6">
-                    <h3 className="text-2xl font-semibold">{selectedItem.name || selectedItem.path}</h3>
-                    <p className="text-zinc-400 leading-relaxed">
-                      {selectedItem.description || "This component is central to the system's core functionality."}
-                    </p>
-                    {selectedItem.file_count && (
-                      <p className="text-sm"><strong>{selectedItem.file_count}</strong> files in this module</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-zinc-500 text-center">
-                    Select an architecture layer or module on the left to see rich context and recommendations
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
+      </div>
+
+      {/* Sticky Right Context Panel */}
+      <div className="w-96 border-l border-zinc-800 bg-zinc-950 p-8 flex-shrink-0 overflow-auto sticky top-0 h-screen">
+        <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
+          <FileText className="w-5 h-5" /> Selected Context
+        </h3>
+
+        {selectedItem ? (
+          <div className="space-y-6">
+            <div>
+              <div className="font-semibold text-xl">{selectedItem.name || selectedItem.path}</div>
+              <div className="text-sm text-zinc-400 mt-1">{selectedItem.description}</div>
+            </div>
+
+            {selectedItem.file_count && (
+              <div className="bg-zinc-900 rounded-2xl p-4">
+                <div className="text-sm text-zinc-400">Contains</div>
+                <div className="text-2xl font-semibold">{selectedItem.file_count} files</div>
+              </div>
+            )}
+
+            <div className="text-sm text-zinc-400">
+              Click on architecture layers or modules on the left to see detailed insights.
+            </div>
+          </div>
+        ) : (
+          <div className="text-zinc-500 text-center py-20">
+            Select an item from the left to see rich context here
+          </div>
+        )}
       </div>
 
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition z-50"
+        className="fixed bottom-8 right-8 w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition z-50"
       >
         <MessageSquare className="w-6 h-6" />
       </button>
 
       {/* Floating Chat Panel */}
       {isChatOpen && (
-        <div className="fixed bottom-24 right-8 w-96 bg-zinc-900 border border-zinc-700 rounded-3xl shadow-2xl z-50 overflow-hidden">
+        <div className="fixed bottom-28 right-8 w-96 bg-zinc-900 border border-zinc-700 rounded-3xl shadow-2xl overflow-hidden z-50 flex flex-col h-[520px]">
           <div className="p-4 border-b border-zinc-700 flex items-center justify-between">
             <div className="font-medium">Ask KMS</div>
             <button onClick={() => setIsChatOpen(false)} className="text-zinc-400 hover:text-white">
@@ -195,7 +205,7 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
             </button>
           </div>
 
-          <div className="h-96 overflow-auto p-4 space-y-4 text-sm" ref={chatEndRef}>
+          <div className="flex-1 p-5 overflow-auto space-y-4 text-sm">
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-white text-black' : 'bg-zinc-800'}`}>
@@ -214,7 +224,7 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Ask about the selected item..."
-                className="flex-1 bg-zinc-950 border border-zinc-700 focus:border-zinc-600 rounded-2xl px-5 py-3 text-sm outline-none"
+                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-2xl px-5 py-3 text-sm outline-none focus:border-zinc-600"
               />
               <button
                 onClick={sendMessage}
