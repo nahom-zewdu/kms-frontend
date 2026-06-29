@@ -193,6 +193,42 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
                 ))}
               </div>
             </div>
+
+            {/* Safe Contribution Zones */}
+            <div className="mt-12">
+              <h3 className="text-xl font-medium mb-6">Safe Contribution Zones</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-emerald-950/50 border border-emerald-900 rounded-3xl p-8">
+                  <h4 className="text-emerald-400 font-medium mb-4">Safe First Contributions</h4>
+                  {visualizerData?.safe_zones?.safe_first?.map((item: any, i: number) => (
+                    <div key={i} className="mb-4 p-4 bg-zinc-900 rounded-2xl text-sm">
+                      {item.path} <span className="text-emerald-500">(Low Risk)</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-red-950/50 border border-red-900 rounded-3xl p-8">
+                  <h4 className="text-red-400 font-medium mb-4">High-Risk Areas</h4>
+                  {visualizerData?.safe_zones?.high_risk?.map((item: any, i: number) => (
+                    <div key={i} className="mb-4 p-4 bg-zinc-900 rounded-2xl text-sm">
+                      {item.path} <span className="text-red-500">(High Risk)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Dependency Impact */}
+            <div className="mt-12">
+              <h3 className="text-xl font-medium mb-6">Dependency Impact</h3>
+              {visualizerData?.dependency_impact?.map((item: any, i: number) => (
+                <div key={i} className="bg-zinc-900 rounded-3xl p-8 mb-6">
+                  <div className="font-medium">If you modify <span className="text-white">{item.file}</span></div>
+                  <div className="text-sm text-zinc-400 mt-2">{item.impact}</div>
+                  <div className="text-xs text-zinc-500 mt-4">Affects: {item.downstream.join(", ")}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Selected Context Panel (Right Sticky) */}
