@@ -56,19 +56,26 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
     setInput('');
     setIsLoading(true);
 
+    const context = selectedItem 
+      ? `Current selection: ${selectedItem.name || selectedItem.path}. Description: ${selectedItem.description || ''}. This is part of the ${role} onboarding playbook.`
+      : `Playbook: ${playbook.title}`;
+
     try {
       const res = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: userMsg,
-          context: selectedItem ? `Current selection: ${selectedItem.name || selectedItem.path}` : `Playbook: ${playbook.title}`
+          context: context
         })
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.answer || "I don't have enough context yet." }]);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: data.answer || "I don't have enough context yet." 
+      }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't process that right now." }]);
     } finally {
       setIsLoading(false);
     }
