@@ -116,43 +116,57 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
         <div id="visualizer" className="mb-24 scroll-mt-20">
           <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6">Codebase Explorer</h2>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left: Architecture & Modules */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="bg-zinc-900 rounded-3xl p-8">
-                <h3 className="text-lg font-medium mb-6">Architecture Layers</h3>
+          <div className="space-y-12">
+            {/* Architecture Map */}
+            <div>
+              <h3 className="text-xl font-medium mb-6">Architecture Overview</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {visualizerData?.architecture?.map((layer: any, i: number) => (
                   <div 
                     key={i} 
-                    className="mb-4 p-5 bg-zinc-950 rounded-2xl cursor-pointer hover:bg-zinc-800 transition-all border border-transparent hover:border-zinc-700"
+                    className="bg-zinc-900 rounded-3xl p-6 cursor-pointer hover:bg-zinc-800 transition"
                     onClick={() => setSelectedItem(layer)}
                   >
-                    <div className="font-semibold text-lg">{layer.name}</div>
-                    <div className="text-sm text-zinc-400 mt-1">{layer.description}</div>
+                    <div className="font-semibold">{layer.name}</div>
+                    <div className="text-sm text-zinc-400 mt-2">{layer.description}</div>
                   </div>
                 ))}
               </div>
+            </div>
 
-              <div className="bg-zinc-900 rounded-3xl p-8">
-                <h3 className="text-lg font-medium mb-6">Key Modules</h3>
+            {/* Modules */}
+            <div>
+              <h3 className="text-xl font-medium mb-6">Key Modules</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {visualizerData?.modules?.map((mod: any, i: number) => (
                   <div 
                     key={i} 
-                    className="mb-3 p-5 bg-zinc-950 rounded-2xl cursor-pointer hover:bg-zinc-800 transition flex justify-between"
+                    className="bg-zinc-900 rounded-3xl p-6 cursor-pointer hover:bg-zinc-800 transition flex justify-between items-start"
                     onClick={() => setSelectedItem(mod)}
                   >
                     <div>
                       <div className="font-medium">{mod.name}</div>
-                      <div className="text-xs text-zinc-500">{mod.file_count} files</div>
+                      <div className="text-sm text-zinc-400">{mod.file_count} files</div>
                     </div>
-                    <div className="text-xs px-3 py-1 bg-zinc-800 rounded-full self-start">
-                      {Math.round(mod.importance * 100)}%
+                    <div className="text-xs px-3 py-1 bg-zinc-800 rounded-full">
+                      {Math.round(mod.importance * 100)}% importance
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
+
+          {/* Selected Context Panel (Right Sticky) */}
+          {selectedItem && (
+            <div className="mt-12 bg-zinc-900 rounded-3xl p-8 border border-zinc-700">
+              <h3 className="text-2xl font-semibold mb-6">{selectedItem.name}</h3>
+              <p className="text-zinc-400 leading-relaxed">{selectedItem.description}</p>
+              {selectedItem.file_count && (
+                <p className="mt-6"><strong>{selectedItem.file_count}</strong> files in this module</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
