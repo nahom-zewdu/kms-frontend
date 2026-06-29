@@ -112,11 +112,35 @@ export function PlaybookViewer({ playbook, role, playbookId }: PlaybookViewerPro
           </div>
         ))}
 
+
+
         {/* Visualizer Section */}
         <div id="visualizer" className="mb-24 scroll-mt-20">
           <h2 className="text-4xl font-semibold tracking-tight mb-8 border-l-4 border-zinc-700 pl-6">Codebase Explorer</h2>
 
           <div className="space-y-12">
+            {/* Learning Path */}
+            <div className="mt-12">
+              <h3 className="text-xl font-medium mb-6">Recommended Learning Path</h3>
+              <div className="space-y-4">
+                {visualizerData?.learning_path?.map((step: any, i: number) => (
+                  <div key={i} className="bg-zinc-900 rounded-3xl p-6 flex gap-6">
+                    <div className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-semibold flex-shrink-0">
+                      {step.step}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium">{step.title}</div>
+                      <div className="text-sm text-zinc-400 mt-1">{step.why}</div>
+                      <div className="flex gap-4 mt-3 text-xs">
+                        <div>Effort: <span className="text-zinc-300">{step.effort}</span></div>
+                        <div>Difficulty: <span className="text-zinc-300">{step.difficulty}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Architecture Map */}
             <div>
               <h3 className="text-xl font-medium mb-6">Architecture Overview</h3>
