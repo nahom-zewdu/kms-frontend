@@ -1,30 +1,37 @@
 // lib/auth.ts
-// This module provides authentication-related utilities for the KMS frontend application.
-// It includes a function to retrieve the current user's context, which can be used across the application to determine access levels, display user-specific information, and manage playbook limits based on the user's subscription plan. 
-// The getUserContext function interacts with Supabase's authentication system to fetch the current user's details and returns a structured context object that includes the user's ID, email, company affiliation, subscription plan, and playbook usage statistics.
+// This file contains the getUserContext function, which retrieves the current user's context from Supabase. 
+// t fetches the user profile and company information based on the authenticated user's ID.
+// The function returns an object containing user details such as id, email, name, company_id, plan, activePlaybooks, and maxPlaybooks. 
+// If no user is authenticated, it returns null.
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-import { supabase } from './supabase';
+export async function getUserContext() {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: () => cookieStore }
+  );
 
-export type UserContext = {
-  userId: string;
-  email: string;
-  companyId: string;
-  plan: 'free' | 'starter' | 'pro' | 'enterprise';
-  activePlaybooks: number;
-  maxPlaybooks: number;
-};
-
-export async function getUserContext(): Promise<UserContext | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
 
-  // TODO: Replace with real user metadata later
+  if (!user) return null;
+      
+  // Fetch user profile + company
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id, role, name')
+    .eq('id', user.id)
+    .single();
+
   return {
-    userId: user.id,
-    email: user.email || '',
-    companyId: 'default',
-    plan: 'starter',
-    activePlaybooks: 3,
-    maxPlaybooks: 10,
+    id: user.id,
+    email: user.email,
+    name: profile?.name || user.email?.split('@')[0],
+    company_id: profile?.company_id || 'default',
+    plan: 'starter', // TODO: subscription logic
+    activePlaybooks: 5, // TODO: real count
+    maxPlaybooks: 20,
   };
 }
