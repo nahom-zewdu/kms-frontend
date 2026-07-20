@@ -1,19 +1,13 @@
 // middleware.ts
-// This middleware handles authentication and authorization for the application.
-// It checks if a user is authenticated and redirects them to the appropriate pages based on their authentication status.
-// If a user is not authenticated and tries to access the dashboard, they are redirected to the login page. 
-// Conversely, if an authenticated user tries to access the login page, they are redirected to the dashboard.
-// The middleware also allows access to the OAuth callback route without any restrictions.
+// Authentication middleware for protected dashboard routes and auth pages.
+// It preserves session cookies, handles missing sessions cleanly, and redirects users consistently.
 
-// middleware.ts
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({
-    request,
-  });
+  const response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,14 +26,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  const user = data?.user ?? null;
 
-  const isAuthPage =
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/signup');
-  const isDashboard = request.nextUrl.pathname.startsWith('/dashboard');
+  const isAuthPage = ['/login', '/signup'].some((path) => request.nextUrl.pathname === path);
+  const isDashboardPath = request.nextUrl.pathname.startsWith('/dashboard');
 
-  if (!user && isDashboard) {
+  if (error) {
+    console.error('[middleware] auth.getUser error', error.message ?? error);
+  }
+
+  if (isDashboardPath && !user) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
