@@ -20,17 +20,19 @@ export async function GET(request: Request) {
         cookies: {
           getAll() { return cookieStore.getAll(); },
           setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => 
-                cookieStore.set(name, value, options)
-              );
-            } catch {}
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
           },
         },
       }
     );
 
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      console.error("Session exchange error:", error);
+    }
   }
 
   return NextResponse.redirect(new URL('/dashboard', request.url));
