@@ -15,11 +15,15 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() { return request.cookies.getAll(); },
+        getAll() {
+          return request.cookies.getAll();
+        },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-          });
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value);
+            });
+          } catch {}
         },
       },
     }
@@ -31,14 +35,17 @@ export async function middleware(request: NextRequest) {
   const isDashboard = request.nextUrl.pathname.startsWith('/dashboard');
   const isCallback = request.nextUrl.pathname.startsWith('/auth/callback');
 
+  // Allow callback to run
   if (isCallback) {
     return NextResponse.next();
   }
 
+  // Redirect unauthenticated users from dashboard
   if (!user && isDashboard) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Redirect authenticated users away from login
   if (user && isAuthPage) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
