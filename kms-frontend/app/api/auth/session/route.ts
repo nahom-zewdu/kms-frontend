@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing access_token or refresh_token' }, { status: 400 });
     }
 
-    const supabase = createServerSupabase();
+    const supabase = await createServerSupabase();
     const { error } = await supabase.auth.setSession({ access_token, refresh_token });
 
     if (error) {
