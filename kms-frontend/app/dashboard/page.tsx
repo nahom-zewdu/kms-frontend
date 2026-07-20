@@ -14,7 +14,7 @@ import { Plus, Play, Users, TrendingUp, BookOpen } from 'lucide-react';
 export default async function DashboardPage() {
   const userContext = await getUserContext();
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: playbooks } = await supabase
     .from('playbooks')
