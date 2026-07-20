@@ -34,13 +34,10 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login');
+  const isAuthPage =
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/signup');
   const isDashboard = request.nextUrl.pathname.startsWith('/dashboard');
-  const isCallback = request.nextUrl.pathname.startsWith('/auth/callback');
-
-  if (isCallback) {
-    return response;
-  }
 
   if (!user && isDashboard) {
     return NextResponse.redirect(new URL('/login', request.url));
@@ -54,5 +51,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/auth/callback'],
+  matcher: ['/dashboard/:path*', '/login', '/signup'],
 };
