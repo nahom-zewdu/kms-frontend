@@ -58,9 +58,8 @@ export async function POST(request: Request) {
     );
   }
 
-  let user;
   try {
-    user = await createUser(email, password, name);
+    await createUser(email, password, name);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Signup failed. Please try again.';
     return NextResponse.json({ error: message }, { status: 400 });
