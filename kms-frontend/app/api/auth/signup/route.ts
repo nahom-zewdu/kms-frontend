@@ -1,34 +1,40 @@
 // api/auth/signup/route.ts
-// This route handles user signup by accepting name, email, and password in the request body. 
-// It uses Supabase's auth API to create a new user. If signup is successful, it creates a user profile in the 'profiles' table with default values. 
-// Finally, it returns a JSON response indicating success and provides a redirect URL to the dashboard or a message to confirm email. 
-// If there are any errors during signup or profile creation, it returns an appropriate error message.
+// This route handles user signup by creating a new Supabase user with the service role key,
+// generating the associated profile row in the database, and immediately starting a session.
+// The service role key is required for this workflow because the profiles table is protected by RLS.
 
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
-async function getProfileClient() {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return createAdminSupabase();
-  }
-  return await createServerSupabase();
-}
+async function createUser(email: string, password: string, name: string) {
+  const adminSupabase = createAdminSupabase();
+  const { data, error } = await adminSupabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { name },
+  });
 
-async function upsertProfile(userId: string, name: string) {
-  const profileClient = await getProfileClient();
-  const { error } = await profileClient.from('profiles').upsert({
-    id: userId,
+  if (error) {
+    throw error;
+  }
+
+  if (!data.user) {
+    throw new Error('User creation failed.');
+  }
+
+  const { error: profileError } = await adminSupabase.from('profiles').upsert({
+    id: data.user.id,
     name,
     company_id: 'default',
   });
-  if (error) {
-    console.error('Profile upsert error:', error);
-    throw new Error(
-      error.message ||
-        'Profile upsert failed. Ensure SUPABASE_SERVICE_ROLE_KEY is set or profile RLS allows authenticated inserts.'
-    );
+
+  if (profileError) {
+    throw profileError;
   }
+
+  return data.user;
 }
 
 export async function POST(request: Request) {
@@ -41,59 +47,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Name, email, and password are required.' }, { status: 400 });
   }
 
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          'SUPABASE_SERVICE_ROLE_KEY is required for signup. Add it to .env.local and restart the server.',
+      },
+      { status: 500 }
+    );
+  }
+
+  let user;
+  try {
+    user = await createUser(email, password, name);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Signup failed. Please try again.';
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { name } },
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data.session) {
+    console.error('Sign in after createUser failed:', error);
+    return NextResponse.json({ error: 'Signup succeeded but login failed. Please try logging in.' }, { status: 500 });
+  }
+
+  const { error: setErr } = await supabase.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
   });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  if (setErr) {
+    console.error('setSession error:', setErr);
+    return NextResponse.json({ error: setErr.message }, { status: 500 });
   }
 
-  if (!data.user) {
-    return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 400 });
-  }
-
-  if (data.session) {
-    const { error: setErr } = await supabase.auth.setSession({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-    });
-    if (setErr) {
-      console.error('setSession error:', setErr);
-      return NextResponse.json({ error: setErr.message }, { status: 500 });
-    }
-
-    try {
-      await upsertProfile(data.user.id, name);
-    } catch (profileError) {
-      return NextResponse.json(
-        { error: 'Could not create profile. Please try again or contact support.' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ ok: true, redirect: '/dashboard' });
-  }
-
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      await upsertProfile(data.user.id, name);
-    } catch (profileError) {
-      return NextResponse.json(
-        { error: 'Could not create profile. Please try again or contact support.' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ ok: true, message: 'Signup successful. Please confirm your email before logging in.' });
-  }
-
-  return NextResponse.json({
-    ok: false,
-    error:
-      'Signup was accepted, but no confirmation session was created and the server cannot create a profile without SUPABASE_SERVICE_ROLE_KEY. Confirm email and log in, or set SUPABASE_SERVICE_ROLE_KEY for server-side profile creation.',
-  }, { status: 400 });
+  return NextResponse.json({ ok: true, redirect: '/dashboard' });
 }
