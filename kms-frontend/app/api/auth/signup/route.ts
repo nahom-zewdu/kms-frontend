@@ -87,7 +87,13 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    return NextResponse.json({ ok: true, message: 'Signup successful. Please confirm your email before logging in.' });
   }
 
-  return NextResponse.json({ ok: true, message: 'Signup successful. Please confirm your email before logging in.' });
+  return NextResponse.json({
+    ok: false,
+    error:
+      'Signup was accepted, but no confirmation session was created and the server cannot create a profile without SUPABASE_SERVICE_ROLE_KEY. Confirm email and log in, or set SUPABASE_SERVICE_ROLE_KEY for server-side profile creation.',
+  }, { status: 400 });
 }
