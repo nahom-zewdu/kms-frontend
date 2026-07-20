@@ -8,11 +8,13 @@
 
 import { getUserContext } from '@/lib/auth';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { Plus, Play, Users, TrendingUp, BookOpen } from 'lucide-react';
 
 export default async function DashboardPage() {
   const userContext = await getUserContext();
+
+  const supabase = createServerSupabase();
 
   const { data: playbooks } = await supabase
     .from('playbooks')
