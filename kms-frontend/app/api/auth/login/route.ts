@@ -8,7 +8,7 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
 async function ensureProfile(userId: string, email: string) {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
   await supabase.from('profiles').upsert({
     id: userId,
     name: email.split('@')[0],
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
   }
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -34,6 +34,17 @@ export async function POST(request: Request) {
 
   if (!data.user) {
     return NextResponse.json({ error: 'Login failed. Please try again.' }, { status: 400 });
+  }
+  // If Supabase returned a session, ensure server cookies are set
+  if (data.session) {
+    const { error: setErr } = await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+    if (setErr) {
+      console.error('setSession error:', setErr);
+      return NextResponse.json({ error: setErr.message }, { status: 500 });
+    }
   }
 
   await ensureProfile(data.user.id, email);
