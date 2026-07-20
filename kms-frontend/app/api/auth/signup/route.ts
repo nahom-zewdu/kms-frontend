@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Name, email, and password are required.' }, { status: 400 });
   }
 
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -39,6 +39,15 @@ export async function POST(request: Request) {
   });
 
   if (data.session) {
+    const { error: setErr } = await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    });
+    if (setErr) {
+      console.error('setSession error:', setErr);
+      return NextResponse.json({ error: setErr.message }, { status: 500 });
+    }
+
     return NextResponse.json({ ok: true, redirect: '/dashboard' });
   }
 
