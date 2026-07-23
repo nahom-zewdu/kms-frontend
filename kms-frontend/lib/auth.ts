@@ -5,35 +5,25 @@ import { createServerSupabase } from '@/lib/supabase-server';
 
 export async function getUserContext() {
   const supabase = await createServerSupabase();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-
-  if (userError) {
-    console.error('[auth] getUser error', userError.message ?? userError);
-    return null;
-  }
-
-  const user = userData?.user;
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('company_id, role, name, plan')
     .eq('id', user.id)
     .single();
 
-  if (profileError) {
-    console.error('[auth] profile fetch error', profileError.message ?? profileError);
-  }
-  
-  const plan = profile?.plan || 'starter';
-
   return {
     id: user.id,
-    email: user.email ?? null,
+    email: user.email,
     name: profile?.name ?? user.email?.split('@')[0] ?? 'User',
     company_id: profile?.company_id ?? 'default',
-    plan: plan,
+    role: profile?.role ?? 'member',
+    plan: profile?.plan ?? 'starter',
     activePlaybooks: 5,
-    maxPlaybooks: 20,
+    maxPlaybooks: (profile?.plan ?? 'starter') === 'pro' ? 999 : 10,
+    isAdmin: profile?.role === 'admin',
+    isManager: ['admin', 'manager'].includes(profile?.role ?? ''),
   };
 }
