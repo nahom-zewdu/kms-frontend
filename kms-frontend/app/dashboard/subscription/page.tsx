@@ -5,6 +5,7 @@
 import { getUserContext } from '@/lib/auth';
 import Link from 'next/link';
 import { Check, Star } from 'lucide-react';
+import UpgradeButton from './UpgradeButton';
 
 export default async function SubscriptionPage() {
   const user = await getUserContext();
@@ -68,14 +69,9 @@ export default async function SubscriptionPage() {
           </ul>
 
           {!isPro ? (
-            <button 
-              className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 transition"
-              onClick={() => alert("Stripe checkout would open here in production.")}
-            >
-              Upgrade to Pro — $29/month
-            </button>
+            <UpgradeButton />
           ) : (
-            <div className="text-center text-amber-400 font-medium py-4">You are on Pro</div>
+            <div className="text-center text-amber-400 font-medium py-4">You are on Pro plan</div>
           )}
         </div>
       </div>
