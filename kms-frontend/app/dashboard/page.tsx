@@ -8,33 +8,33 @@
 
 import { getUserContext } from '@/lib/auth';
 import Link from 'next/link';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { supabase } from '@/lib/supabase';
 import { Plus, Play, Users, TrendingUp, BookOpen } from 'lucide-react';
 
 export default async function DashboardPage() {
-  const userContext = await getUserContext();
-
-  const supabase = await createServerSupabase();
+  const user = await getUserContext();
+  if (!user) return null;
 
   const { data: playbooks } = await supabase
     .from('playbooks')
     .select('*')
     .eq('is_active', true)
+    .eq('company_id', user.company_id)
     .order('created_at', { ascending: false })
     .limit(8);
 
   const { count: totalPlaybooks } = await supabase
     .from('playbooks')
     .select('*', { count: 'exact', head: true })
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .eq('company_id', user.company_id);
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex justify-between items-end mb-12">
         <div>
           <h1 className="text-6xl font-semibold tracking-tighter">Dashboard</h1>
-          <p className="text-zinc-500 mt-2">Welcome back, {userContext?.name || 'Team'}</p>
+          <p className="text-zinc-500 mt-2">Welcome back, {user.name}</p>
         </div>
 
         <Link
@@ -46,36 +46,24 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         <div className="bg-zinc-900 rounded-3xl p-8">
-          <div className="flex items-center gap-4">
-            <Play className="w-8 h-8 text-emerald-400" />
-            <div>
-              <div className="text-5xl font-semibold">{totalPlaybooks || 0}</div>
-              <div className="text-zinc-400">Active Playbooks</div>
-            </div>
-          </div>
+          <Play className="w-8 h-8 text-emerald-400 mb-4" />
+          <div className="text-5xl font-semibold">{totalPlaybooks || 0}</div>
+          <div className="text-zinc-400">Active Playbooks</div>
         </div>
 
         <div className="bg-zinc-900 rounded-3xl p-8">
-          <div className="flex items-center gap-4">
-            <Users className="w-8 h-8 text-blue-400" />
-            <div>
-              <div className="text-5xl font-semibold">12</div>
-              <div className="text-zinc-400">Team Members</div>
-            </div>
-          </div>
+          <Users className="w-8 h-8 text-blue-400 mb-4" />
+          <div className="text-5xl font-semibold">12</div>
+          <div className="text-zinc-400">Team Members</div>
         </div>
 
         <div className="bg-zinc-900 rounded-3xl p-8">
-          <div className="flex items-center gap-4">
-            <TrendingUp className="w-8 h-8 text-amber-400" />
-            <div>
-              <div className="text-5xl font-semibold">8</div>
-              <div className="text-zinc-400">Recent Events</div>
-            </div>
-          </div>
+          <TrendingUp className="w-8 h-8 text-amber-400 mb-4" />
+          <div className="text-5xl font-semibold">8</div>
+          <div className="text-zinc-400">Recent Events</div>
         </div>
       </div>
 
@@ -85,7 +73,7 @@ export default async function DashboardPage() {
           <h2 className="text-2xl font-medium flex items-center gap-3">
             <BookOpen className="w-6 h-6" /> Active Onboardings
           </h2>
-          <span className="text-sm text-zinc-500">{playbooks?.length || 0} total</span>
+          <span className="text-sm text-zinc-500">{totalPlaybooks || 0} total</span>
         </div>
 
         {playbooks && playbooks.length > 0 ? (
@@ -108,7 +96,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="text-center py-20 text-zinc-500">
-            No active playbooks yet.<br />Create your first one above.
+            No active playbooks yet. Create your first one above.
           </div>
         )}
       </div>
