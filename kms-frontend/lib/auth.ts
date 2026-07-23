@@ -17,20 +17,22 @@ export async function getUserContext() {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('company_id, role, name')
+    .select('company_id, role, name, plan')
     .eq('id', user.id)
     .single();
 
   if (profileError) {
     console.error('[auth] profile fetch error', profileError.message ?? profileError);
   }
+  
+  const plan = profile?.plan || 'starter';
 
   return {
     id: user.id,
     email: user.email ?? null,
     name: profile?.name ?? user.email?.split('@')[0] ?? 'User',
     company_id: profile?.company_id ?? 'default',
-    plan: 'starter',
+    plan: plan,
     activePlaybooks: 5,
     maxPlaybooks: 20,
   };
