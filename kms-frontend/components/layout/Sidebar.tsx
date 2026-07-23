@@ -50,6 +50,10 @@ export function Sidebar() {
           <Settings className="w-4 h-4" />
           Settings
         </Link>
+        <Link href="/dashboard/subscription" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
+          <CreditCard className="w-4 h-4" />
+          Subscription
+        </Link>
         <button onClick={handleLogout} className="w-full text-left mt-4 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
           Sign out
         </button>
