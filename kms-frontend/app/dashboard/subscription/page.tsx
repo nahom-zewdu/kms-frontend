@@ -4,6 +4,7 @@
 
 import { getUserContext } from '@/lib/auth';
 import Link from 'next/link';
+import { Check, Star } from 'lucide-react';
 
 export default async function SubscriptionPage() {
   const user = await getUserContext();
@@ -13,49 +14,74 @@ export default async function SubscriptionPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-5xl font-semibold tracking-tighter mb-12">Subscription</h1>
+      <h1 className="text-5xl font-semibold tracking-tighter mb-4">Subscription</h1>
+      <p className="text-zinc-500 mb-12">Current plan: <span className="text-white font-medium">{user.plan.toUpperCase()}</span></p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Starter Plan */}
         <div className={`bg-zinc-900 rounded-3xl p-10 ${!isPro ? 'ring-2 ring-white' : ''}`}>
-          <div className="text-emerald-400 font-medium mb-4">STARTER</div>
-          <div className="text-6xl font-semibold tracking-tighter mb-2">$0</div>
-          <div className="text-zinc-400 mb-8">per month</div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-emerald-400">
+              <Check className="w-8 h-8" />
+            </div>
+            <div>
+              <div className="text-emerald-400 font-medium">STARTER</div>
+              <div className="text-5xl font-semibold tracking-tighter">$0</div>
+            </div>
+          </div>
 
           <ul className="space-y-4 mb-12 text-sm">
-            <li>✓ Up to 10 playbooks</li>
+            <li>✓ Up to 10 active playbooks</li>
             <li>✓ Basic knowledge graph</li>
             <li>✓ Slack + GitHub integration</li>
+            <li>✓ Standard support</li>
           </ul>
 
-          <div className="text-center text-sm text-zinc-500">Current Plan</div>
+          {!isPro && <div className="text-center text-emerald-400 font-medium">Current Plan</div>}
         </div>
 
         {/* Pro Plan */}
-        <div className={`bg-zinc-900 rounded-3xl p-10 relative ${isPro ? 'ring-2 ring-white' : ''}`}>
-          <div className="absolute -top-3 right-8 bg-white text-black text-xs font-medium px-4 py-1 rounded-full">
-            RECOMMENDED
-          </div>
+        <div className={`bg-zinc-900 rounded-3xl p-10 relative ${isPro ? 'ring-2 ring-amber-400' : ''}`}>
+          {isPro && (
+            <div className="absolute -top-3 right-8 bg-amber-400 text-black text-xs font-medium px-4 py-1 rounded-full flex items-center gap-1">
+              <Star className="w-4 h-4" /> Active
+            </div>
+          )}
 
-          <div className="text-amber-400 font-medium mb-4">PRO</div>
-          <div className="text-6xl font-semibold tracking-tighter mb-2">$29</div>
-          <div className="text-zinc-400 mb-8">per month</div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-amber-400">
+              <Star className="w-8 h-8" />
+            </div>
+            <div>
+              <div className="text-amber-400 font-medium">PRO</div>
+              <div className="text-5xl font-semibold tracking-tighter">$29</div>
+              <div className="text-zinc-400 text-sm">per month</div>
+            </div>
+          </div>
 
           <ul className="space-y-4 mb-12 text-sm">
             <li>✓ Unlimited playbooks</li>
-            <li>✓ Advanced analytics</li>
+            <li>✓ Advanced analytics & insights</li>
             <li>✓ Priority support</li>
-            <li>✓ Team management</li>
+            <li>✓ Team management & RBAC</li>
+            <li>✓ Custom integrations</li>
           </ul>
 
-          <button className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 transition">
-            Upgrade to Pro
-          </button>
+          {!isPro ? (
+            <button 
+              className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 transition"
+              onClick={() => alert("Stripe checkout would open here in production.")}
+            >
+              Upgrade to Pro — $29/month
+            </button>
+          ) : (
+            <div className="text-center text-amber-400 font-medium py-4">You are on Pro</div>
+          )}
         </div>
       </div>
 
       <div className="mt-12 text-center text-sm text-zinc-500">
-        Need custom pricing for your team? <Link href="/contact" className="text-white hover:underline">Contact us</Link>
+        Need custom enterprise pricing? <Link href="/contact" className="text-white hover:underline">Contact sales</Link>
       </div>
     </div>
   );
