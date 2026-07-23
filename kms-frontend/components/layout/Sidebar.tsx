@@ -3,7 +3,7 @@
 
 'use client';
 
-import { Home, Users, BookOpen, BarChart3, Settings } from 'lucide-react';
+import { Home, Users, BookOpen, BarChart3, Settings, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 export function Sidebar() {
