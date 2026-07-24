@@ -1,12 +1,10 @@
 // app/api/invite/route.ts
 
-import { getUserContext } from '@/lib/auth';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { requireRole } from '@/lib/permissions';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const user = await getUserContext();
-  if (!user?.isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  const user = await requireRole('manager');
 
   const { email, role } = await request.json();
 
