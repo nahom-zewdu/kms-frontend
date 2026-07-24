@@ -3,14 +3,19 @@
 // It checks if the user is an admin and displays the invite form and user list if they are.
 // If the user is not an admin, it displays an "Admin access only" message.
 
-import { getUserContext } from '@/lib/auth';
+import { requireRole } from '@/lib/permissions';
 import InviteForm from './InviteForm';
 import UserList from './UserList';
 
 export default async function SettingsPage() {
-  const user = await getUserContext();
-  if (!user?.isAdmin) {
-    return <div className="text-red-400">Admin access only.</div>;
+  const user = await requireRole('admin');
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-5xl font-semibold tracking-tighter mb-12">Company Settings</h1>
+        <p className="text-lg text-zinc-400">Admin access only.</p>
+      </div>
+    );
   }
 
   return (
