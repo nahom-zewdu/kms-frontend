@@ -13,5 +13,5 @@ export default async function NewPlaybookPage() {
   const canCreate = user.isManager; // Only managers and admins
   const limitReached = user.activePlaybooks >= user.maxPlaybooks;
 
-  return <NewPlaybookForm canCreate={canCreate} limitReached={limitReached} user={user} />;
+  return <NewPlaybookForm limitReached={limitReached} user={user} />;
 }
