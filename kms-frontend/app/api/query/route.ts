@@ -4,6 +4,7 @@
 // The API route also handles error cases, such as missing questions or backend failures, and returns appropriate responses to the frontend.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole } from '@/lib/permissions';
 
 function parseJsonResponse(value: unknown) {
   if (!value || typeof value !== 'string') {
@@ -32,6 +33,11 @@ function parseJsonResponse(value: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  const user = await requireRole('member');
+  if (!user) {
+    return NextResponse.json({ answer: "Unauthorized" }, { status: 403 });
+  }
+  
   try {
     const { question, context = "" } = await request.json();
 
