@@ -36,7 +36,16 @@ export default function UserList() {
     fetchUsers();
   };
 
-  if (loading) return <div>Loading team...</div>;
+  const removeUser = async (userId: string) => {
+    if (!confirm('Remove user?')) return;
+    await fetch('/api/users/remove', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+    fetchUsers();
+  };
+
+  if (loading) return <div className="text-zinc-500">Loading team members...</div>;
 
   return (
     <div className="space-y-4">
@@ -47,15 +56,24 @@ export default function UserList() {
             <div className="text-sm text-zinc-500">{u.email}</div>
           </div>
 
-          <select 
-            value={u.role} 
-            onChange={(e) => changeRole(u.id, e.target.value)}
-            className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2"
-          >
-            <option value="member">Member</option>
-            <option value="manager">Manager</option>
-            <option value="admin">Admin</option>
-          </select>
+          <div className="flex items-center gap-4">
+            <select 
+              value={u.role} 
+              onChange={(e) => changeRole(u.id, e.target.value)}
+              className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm"
+            >
+              <option value="member">Member</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+
+            <button 
+              onClick={() => removeUser(u.id)}
+              className="text-red-400 hover:text-red-500 text-sm"
+            >
+              Remove
+            </button>
+          </div>
         </div>
       ))}
     </div>
