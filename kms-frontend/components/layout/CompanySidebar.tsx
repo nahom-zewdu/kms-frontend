@@ -1,60 +1,70 @@
-// app/dashboard/company/c/[companyId]/CompanySidebar.tsx
-// This component renders the sidebar for a specific company's dashboard section in the KMS application.
+// app/dashboard/company/[companyId]/page.tsx
+// This is the main page for a specific company's dashboard in the KMS application.
+// It displays an overview of the company, including the number of active playbooks and team members.
+// It uses the getUserContext function to fetch user information and company memberships, and the createServerSupabase function to query the database for playbook and member counts.
 
-'use client';
+import { getUserContext } from '@/lib/auth';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  Home, BookOpen, Users, Settings, 
-  GitBranch, MessageSquare, ArrowLeft 
-} from 'lucide-react';
+import { createServerSupabase } from '@/lib/supabase-server';
+import { Plus, BookOpen, Users } from 'lucide-react';
 
-interface Props {
-  companyId: string;
-  companyName: string;
-  role: string;
-}
+export default async function CompanyDashboard({
+  params,
+}: {
+  params: Promise<{ companyId: string }>;
+}) {
+  const { companyId } = await params;
+  const user = await getUserContext();
+  if (!user) return null;
 
-export function CompanySidebar({ companyId, companyName, role }: Props) {
-  const pathname = usePathname();
-  const base = `/dashboard/c/${companyId}`;
+  const membership = user.companies.find(c => c.id === companyId);
+  if (!membership) return null;
 
-  const links = [
-    { href: base, label: 'Overview', icon: Home },
-    { href: `${base}/playbooks`, label: 'Playbooks', icon: BookOpen },
-    { href: `${base}/members`, label: 'Members', icon: Users },
-    { href: `${base}/integrations`, label: 'Integrations', icon: GitBranch },
-    { href: `${base}/settings`, label: 'Settings', icon: Settings },
-  ];
+  const supabase = await createServerSupabase();
+
+  const { count: playbookCount } = await supabase
+    .from('playbooks')
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', companyId)
+    .eq('is_active', true);
+
+  const { count: memberCount } = await supabase
+    .from('company_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', companyId);
 
   return (
-    <div className="w-72 border-r border-zinc-800 bg-zinc-950 p-6 flex-shrink-0 flex flex-col">
-      <div className="mb-8">
-        <Link href="/dashboard" className="flex items-center gap-2 text-sm text-zinc-500 hover:text-white mb-4">
-          <ArrowLeft className="w-4 h-4" /> All Companies
-        </Link>
-        <div className="text-xl font-semibold tracking-tight">{companyName}</div>
-        <div className="text-xs text-zinc-500 mt-1 capitalize">{role}</div>
+    <div className="max-w-5xl mx-auto">
+      <div className="flex justify-between items-end mb-12">
+        <div>
+          <h1 className="text-5xl font-semibold tracking-tighter">{membership.name}</h1>
+          <p className="text-zinc-500 mt-2">Company Overview</p>
+        </div>
+
+        {membership.role !== 'member' && (
+          <Link
+            href={`/dashboard/c/${companyId}/playbooks/new`}
+            className="inline-flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-medium hover:bg-zinc-200 transition"
+          >
+            <Plus className="w-5 h-5" />
+            New Playbook
+          </Link>
+        )}
       </div>
 
-      <nav className="space-y-1 flex-1">
-        {links.map((link) => {
-          const Icon = link.icon;
-          const active = pathname === link.href;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 px-4 py-3 text-sm rounded-2xl transition-all ${
-                active ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-900 text-zinc-400'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="bg-zinc-900 rounded-3xl p-8">
+          <BookOpen className="w-8 h-8 text-emerald-400 mb-4" />
+          <div className="text-5xl font-semibold">{playbookCount || 0}</div>
+          <div className="text-zinc-400">Active Playbooks</div>
+        </div>
+
+        <div className="bg-zinc-900 rounded-3xl p-8">
+          <Users className="w-8 h-8 text-blue-400 mb-4" />
+          <div className="text-5xl font-semibold">{memberCount || 0}</div>
+          <div className="text-zinc-400">Team Members</div>
+        </div>
+      </div>
     </div>
   );
 }
