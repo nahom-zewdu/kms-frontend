@@ -1,4 +1,4 @@
-// app/dashboard/company/c/[companyId]/layout.tsx
+// app/dashboard/c/[companyId]/layout.tsx
 // This is the layout for a specific company's dashboard section in the KMS application.
 // It fetches the user context and checks if the user has access to the specified company.
 
