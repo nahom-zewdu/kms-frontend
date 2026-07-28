@@ -1,4 +1,6 @@
 // app/dashboard/c/[companyId]/settings/page.tsx
+// This is a server component that renders the settings page for a specific company. 
+// It checks if the user has admin access to the company and displays integration cards for Slack and GitHub.
 
 import { getUserContext } from '@/lib/auth';
 import IntegrationCard from './IntegrationCard';
