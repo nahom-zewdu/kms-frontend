@@ -25,7 +25,6 @@ export function CompanySidebar({ companyId, companyName, role }: Props) {
     { href: base, label: 'Overview', icon: Home },
     { href: `${base}/playbooks`, label: 'Playbooks', icon: BookOpen },
     { href: `${base}/members`, label: 'Members', icon: Users },
-    { href: `${base}/integrations`, label: 'Integrations', icon: GitBranch },
     { href: `${base}/settings`, label: 'Settings', icon: Settings },
   ];
 
