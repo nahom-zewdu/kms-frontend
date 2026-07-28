@@ -1,5 +1,6 @@
 // components/layout/Sidebar.tsx
 // This component defines the sidebar navigation for the KMS dashboard.
+// It includes links to the Overview, Companies, Settings, and Subscription pages, as well as a logout button.
 
 'use client';
 
@@ -34,17 +35,9 @@ export function Sidebar() {
           <Home className="w-4 h-4" />
           Overview
         </Link>
-        <Link href="/dashboard/onboard" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
-          <BookOpen className="w-4 h-4" />
-          Active Playbooks
-        </Link>
-        <Link href="/dashboard/teams" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
+        <Link href="/dashboard/companies" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
           <Users className="w-4 h-4" />
-          Teams
-        </Link>
-        <Link href="/dashboard/analytics" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
-          <BarChart3 className="w-4 h-4" />
-          Knowledge Health
+          Companies
         </Link>
         <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-zinc-900 rounded-2xl transition-all">
           <Settings className="w-4 h-4" />
