@@ -5,6 +5,11 @@
 import { getUserContext } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { cookies } from 'next/headers';
+
+function base64url(buf: Buffer) {
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 export async function GET(request: Request) {
   const user = await getUserContext();
@@ -19,17 +24,38 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const state = Buffer.from(JSON.stringify({
+  const codeVerifier = base64url(crypto.randomBytes(32));
+  const codeChallenge = base64url(crypto.createHash('sha256').update(codeVerifier).digest());
+
+  const state = base64url(Buffer.from(JSON.stringify({
     companyId,
     userId: user.id,
-    nonce: crypto.randomBytes(16).toString('hex'),
-  })).toString('base64url');
+    nonce: crypto.randomBytes(8).toString('hex'),
+  })));
+
+  const cookieStore = await cookies();
+  cookieStore.set('slack_oauth_verifier', codeVerifier, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 600,
+  });
+  cookieStore.set('slack_oauth_state', state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 600,
+  });
 
   const params = new URLSearchParams({
     client_id: process.env.SLACK_CLIENT_ID!,
     scope: 'channels:history,groups:history,chat:write,app_mentions:read,users:read,team:read',
     redirect_uri: process.env.SLACK_REDIRECT_URI!,
     state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
   });
 
   return NextResponse.redirect(`https://slack.com/oauth/v2/authorize?${params}`);
