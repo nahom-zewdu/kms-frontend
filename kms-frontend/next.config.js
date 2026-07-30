@@ -4,3 +4,7 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
+module.exports = {
+  allowedDevOrigins: ['mala-kandy-subcentrally.ngrok-free.dev'],
+}
