@@ -4,6 +4,7 @@
 
 'use client';
 import { useEffect, useState } from 'react';
+import GitHubRepos from './GitHubRepos';
 
 interface Integration {
   id: string;
@@ -80,22 +81,35 @@ export default function IntegrationCard({ companyId, provider, title, descriptio
       </div>
 
       {integration ? (
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-zinc-400">
-            <span className="text-white font-medium">
-              {integration.metadata?.team_name || integration.metadata?.login || integration.external_id}
-            </span>
-            <span className="mx-2">·</span>
-            <span className="font-mono text-xs">{integration.external_id}</span>
+        <>
+          <div className="mt-6 flex items-center justify-between">
+            <div className="text-sm text-zinc-400">
+              <span className="text-white font-medium">
+                {integration.metadata?.team_name ||
+                  integration.metadata?.login ||
+                  integration.external_id}
+              </span>
+              <span className="mx-2">·</span>
+              <span className="font-mono text-xs">{integration.external_id}</span>
+            </div>
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="text-red-400 hover:text-red-300 text-sm font-medium disabled:opacity-50"
+            >
+              {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+            </button>
           </div>
-          <button
-            onClick={handleDisconnect}
-            disabled={disconnecting}
-            className="text-red-400 hover:text-red-300 text-sm font-medium disabled:opacity-50"
-          >
-            {disconnecting ? 'Disconnecting...' : 'Disconnect'}
-          </button>
-        </div>
+
+          {provider === 'github' && <GitHubRepos companyId={companyId} />}
+
+          {provider === 'slack' && (
+            <p className="mt-6 text-sm text-zinc-500">
+              Invite the bot into channels you want to index:{' '}
+              <code className="text-zinc-300">/invite @kms</code>
+            </p>
+          )}
+        </>
       ) : (
         <button
           onClick={handleConnect}
