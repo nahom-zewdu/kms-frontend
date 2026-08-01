@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     .from('profiles')
     .update({ role })
     .eq('id', userId)
-    .eq('company_id', user.company_id);
+    .eq('company_id', user.activeCompany.id);
 
   return NextResponse.json({ ok: true });
 }
