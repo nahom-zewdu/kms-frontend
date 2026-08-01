@@ -12,7 +12,7 @@ export async function GET() {
   const { data } = await supabase
     .from('profiles')
     .select('id, email, name, role')
-    .eq('company_id', user.company_id);
+    .eq('company_id', user.activeCompany.id);
 
   return NextResponse.json({ users: data });
 }
