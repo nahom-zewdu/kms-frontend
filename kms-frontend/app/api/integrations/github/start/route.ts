@@ -1,17 +1,17 @@
 // app/api/integrations/github/start/route.ts
-// This is a server route that initiates the GitHub OAuth flow for integrating a company with GitHub.
-// It verifies that the user is authenticated and has admin access to the specified company before redirecting to GitHub's authorization page.
+// This route is used to start the GitHub integration flow. 
+// It generates a state parameter, stores it in a cookie, and redirects the user to the GitHub app installation page.
 
 import { getUserContext } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const user = await getUserContext();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { searchParams } = new URL(request.url);
-  const companyId = searchParams.get('companyId');
+  const companyId = new URL(request.url).searchParams.get('companyId');
   if (!companyId) return NextResponse.json({ error: 'Missing companyId' }, { status: 400 });
 
   const membership = user.companies.find(c => c.id === companyId);
@@ -19,18 +19,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const state = Buffer.from(JSON.stringify({
-    companyId,
-    userId: user.id,
-    nonce: crypto.randomBytes(16).toString('hex'),
-  })).toString('base64url');
+  const state = Buffer.from(
+    JSON.stringify({
+      companyId,
+      userId: user.id,
+      nonce: crypto.randomBytes(8).toString('hex'),
+    })
+  ).toString('base64url');
 
-  const params = new URLSearchParams({
-    client_id: process.env.GITHUB_CLIENT_ID!,
-    redirect_uri: process.env.GITHUB_REDIRECT_URI!,
-    scope: 'repo read:org admin:repo_hook',
-    state,
+  const cookieStore = await cookies();
+  cookieStore.set('github_app_state', state, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 600,
   });
 
-  return NextResponse.redirect(`https://github.com/login/oauth/authorize?${params}`);
+  const slug = process.env.GITHUB_APP_SLUG!;
+  // state is passed through; GitHub also supports redirect_uri on some flows
+  const url = `https://github.com/apps/${slug}/installations/new?state=${state}`;
+
+  return NextResponse.redirect(url);
 }
