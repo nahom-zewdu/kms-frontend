@@ -1,8 +1,8 @@
 // app/dashboard/c/[companyId]/layout.tsx
 // This is the layout for a specific company's dashboard section in the KMS application.
 // It fetches the user context and checks if the user has access to the specified company.
-import { redirect } from 'next/navigation';
 import { getUserContext } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { CompanySidebar } from '@/components/layout/CompanySidebar';
 
 export default async function CompanyLayout({
