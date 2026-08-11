@@ -5,7 +5,7 @@
 // If the user is not logged in or does not have access, they are redirected to the login page or dashboard, respectively.
 
 import { getUserContext } from '@/lib/auth';
-import { createAdminSupabase } from '@/lib/supabase-admin';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Route } from 'lucide-react';
@@ -23,19 +23,16 @@ export default async function RampIndexPage({
   const membership = user.companies.find((c) => c.id === companyId);
   if (!membership) redirect('/dashboard');
 
-  // Admin client AFTER membership gate — same pattern as integrations
-  const supabase = createAdminSupabase();
+  const supabase = await createServerSupabase();
   const { data: plans, error } = await supabase
     .from('ramp_plans')
-    .select('id, role, title, employee_name, is_active, created_at, company_id')
+    .select('id, role, employee_name, is_active, created_at, company_id')
     .eq('company_id', companyId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error('ramp_plans list error:', error);
-  } else {
-    console.log('ramp_plans list count:', plans?.length ?? 0, 'company:', companyId);
   }
 
   const canGenerate = membership.role === 'admin' || membership.role === 'manager';
@@ -45,7 +42,7 @@ export default async function RampIndexPage({
       <div className="mb-12">
         <h1 className="text-4xl font-semibold tracking-tighter">First 7 Days</h1>
         <p className="text-zinc-500 mt-2">
-          Live ramp paths for this company—ordered modules, risk, and owners when known.
+          Live ramp paths for this company ordered modules, risk, and owners when known.
         </p>
       </div>
 
@@ -61,12 +58,12 @@ export default async function RampIndexPage({
                   className="block border border-zinc-800 p-6 hover:border-zinc-600 transition-colors h-full"
                 >
                   <div className="font-medium tracking-tight">
-                    {p.title || `First 7 Days — ${p.role}`}
+                    First 7 Days — {p.role}
                   </div>
                   <div className="text-sm text-zinc-500 mt-1 font-mono">{p.role}</div>
-                  {p.employee_name && (
+                  {p.employee_name ? (
                     <div className="text-sm text-zinc-400 mt-2">For {p.employee_name}</div>
-                  )}
+                  ) : null}
                   <div className="text-xs text-zinc-600 mt-4">
                     {p.created_at
                       ? `Updated ${new Date(p.created_at).toLocaleDateString()}`
@@ -83,9 +80,6 @@ export default async function RampIndexPage({
             <p className="text-sm text-zinc-600 mt-1">
               Generate one after a repository baseline is synced.
             </p>
-            {error && (
-              <p className="text-xs text-red-400 mt-3 font-mono">{error.message}</p>
-            )}
           </div>
         )}
       </section>
