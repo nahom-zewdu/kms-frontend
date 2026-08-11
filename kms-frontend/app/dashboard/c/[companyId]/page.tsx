@@ -26,6 +26,15 @@ export default async function CompanyOverviewPage({
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
         <Link
+          href={`/dashboard/c/${companyId}/ramp`}
+          className="border border-zinc-800 p-6 hover:border-zinc-600 transition-colors"
+        >
+          <div className="font-medium">First 7 Days</div>
+          <div className="text-sm text-zinc-500 mt-1">
+            Live ramp path from this company&apos;s codebase
+          </div>
+        </Link>
+        <Link
           href={`/dashboard/c/${companyId}/playbooks`}
           className="border border-zinc-800 p-6 hover:border-zinc-600 transition-colors"
         >
