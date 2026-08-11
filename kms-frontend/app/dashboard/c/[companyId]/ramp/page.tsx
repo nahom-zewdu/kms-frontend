@@ -5,13 +5,11 @@
 // If the user is not logged in or does not have access, they are redirected to the login page or dashboard, respectively.
 
 import { getUserContext } from '@/lib/auth';
-import { createServerSupabase } from '@/lib/supabase-server';
+import { createAdminSupabase } from '@/lib/supabase-admin';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Route } from 'lucide-react';
 import { GenerateRampForm } from '@/components/ramp/GenerateRampForm';
-import error from 'next/dist/api/error';
-
 
 export default async function RampIndexPage({
   params,
@@ -25,16 +23,19 @@ export default async function RampIndexPage({
   const membership = user.companies.find((c) => c.id === companyId);
   if (!membership) redirect('/dashboard');
 
-  const supabase = await createServerSupabase();
+  // Admin client AFTER membership gate — same pattern as integrations
+  const supabase = createAdminSupabase();
   const { data: plans, error } = await supabase
     .from('ramp_plans')
-    .select('id, role, employee_name, is_active, created_at')
+    .select('id, role, title, employee_name, is_active, created_at, company_id')
     .eq('company_id', companyId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('ramp_plans list error', error);
+    console.error('ramp_plans list error:', error);
+  } else {
+    console.log('ramp_plans list count:', plans?.length ?? 0, 'company:', companyId);
   }
 
   const canGenerate = membership.role === 'admin' || membership.role === 'manager';
@@ -48,7 +49,6 @@ export default async function RampIndexPage({
         </p>
       </div>
 
-      {/* Existing plans */}
       <section className="mb-14">
         <h2 className="text-xs uppercase tracking-wide text-zinc-600 mb-4">Active ramps</h2>
 
@@ -61,7 +61,7 @@ export default async function RampIndexPage({
                   className="block border border-zinc-800 p-6 hover:border-zinc-600 transition-colors h-full"
                 >
                   <div className="font-medium tracking-tight">
-                    {`First 7 Days ${p.role}`}
+                    {p.title || `First 7 Days — ${p.role}`}
                   </div>
                   <div className="text-sm text-zinc-500 mt-1 font-mono">{p.role}</div>
                   {p.employee_name && (
@@ -83,6 +83,9 @@ export default async function RampIndexPage({
             <p className="text-sm text-zinc-600 mt-1">
               Generate one after a repository baseline is synced.
             </p>
+            {error && (
+              <p className="text-xs text-red-400 mt-3 font-mono">{error.message}</p>
+            )}
           </div>
         )}
       </section>
