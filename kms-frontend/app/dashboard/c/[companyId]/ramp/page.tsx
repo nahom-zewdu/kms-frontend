@@ -3,16 +3,15 @@
 // It allows the user to select a role and optionally enter a new hire's name to generate a ramp plan.
 // The page fetches the user context and checks if the user has access to the specified company.
 // If the user is not logged in or does not have access, they are redirected to the login page or dashboard, respectively.
-'use client';
 
-import { redirect, useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { getUserContext } from '@/lib/auth';
-    
+import { createServerSupabase } from '@/lib/supabase-server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Route } from 'lucide-react';
 import { GenerateRampForm } from '@/components/ramp/GenerateRampForm';
-import { createServerSupabase } from '@/lib/supabase-server';
+import error from 'next/dist/api/error';
+
 
 export default async function RampIndexPage({
   params,
@@ -29,13 +28,13 @@ export default async function RampIndexPage({
   const supabase = await createServerSupabase();
   const { data: plans, error } = await supabase
     .from('ramp_plans')
-    .select('id, role, title, employee_name, is_active, created_at, meta')
+    .select('id, role, employee_name, is_active, created_at')
     .eq('company_id', companyId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('ramp_plans list:', error.message);
+    console.error('ramp_plans list error', error);
   }
 
   const canGenerate = membership.role === 'admin' || membership.role === 'manager';
@@ -62,7 +61,7 @@ export default async function RampIndexPage({
                   className="block border border-zinc-800 p-6 hover:border-zinc-600 transition-colors h-full"
                 >
                   <div className="font-medium tracking-tight">
-                    {p.title || `First 7 Days — ${p.role}`}
+                    {`First 7 Days ${p.role}`}
                   </div>
                   <div className="text-sm text-zinc-500 mt-1 font-mono">{p.role}</div>
                   {p.employee_name && (
@@ -88,11 +87,7 @@ export default async function RampIndexPage({
         )}
       </section>
 
-      {canGenerate && (
-        <section>
-          <GenerateRampForm companyId={companyId} />
-        </section>
-      )}
+      {canGenerate && <GenerateRampForm companyId={companyId} />}
     </div>
   );
 }
