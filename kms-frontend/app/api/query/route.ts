@@ -1,25 +1,23 @@
 // app/api/query/route.ts
-// This API route handles POST requests from the PlaybookViewer component when a user asks a question about the playbook. 
-// It receives the user's question and the playbook context, then forwards this information to a Go backend service that processes the query and returns an answer. 
-// The API route also handles error cases, such as missing questions or backend failures, and returns appropriate responses to the frontend.
+// Proxies company-scoped questions to the Go /query endpoint.
+// Verifies membership, then forwards question + company_id (and optional ramp context).
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole } from '@/lib/permissions';
+import { getUserContext } from '@/lib/auth';
 
 function parseJsonResponse(value: unknown) {
-  if (!value || typeof value !== 'string') {
-    return null;
-  }
-
+  if (!value || typeof value !== 'string') return null;
   const trimmed = value.trim();
-  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+  if (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  ) {
     try {
       return JSON.parse(trimmed);
     } catch {
       return null;
     }
   }
-
   const match = trimmed.match(/({[\s\S]*})/);
   if (match?.[1]) {
     try {
@@ -28,69 +26,83 @@ function parseJsonResponse(value: unknown) {
       return null;
     }
   }
-
   return null;
 }
 
 export async function POST(request: NextRequest) {
-  const user = await requireRole('member');
+  const user = await getUserContext();
   if (!user) {
-    return NextResponse.json({ answer: "Unauthorized" }, { status: 403 });
+    return NextResponse.json({ answer: 'Unauthorized' }, { status: 401 });
   }
-  
+
   try {
-    const { question, context = "" } = await request.json();
+    const body = await request.json();
+    const question = (body.question || '').toString().trim();
+    const companyId = (body.company_id || body.companyId || '').toString().trim();
+    const context = (body.context || '').toString().trim();
 
     if (!question) {
-      return NextResponse.json({ answer: "Please ask a question." }, { status: 400 });
+      return NextResponse.json({ answer: 'Please ask a question.' }, { status: 400 });
+    }
+    if (!companyId || !user.companies.some((c) => c.id === companyId)) {
+      return NextResponse.json({ answer: 'Forbidden' }, { status: 403 });
     }
 
-    const response = await fetch('http://localhost:9090/query', {
+    const goUrl = process.env.GO_API_URL || 'http://localhost:9090';
+    const response = await fetch(`${goUrl}/query`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        question: `${context} ${question}`,
+        question: context ? `${context}\n\nQuestion: ${question}` : question,
+        company_id: companyId,
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Backend query failed');
+      throw new Error(`Backend query failed: ${response.status}`);
     }
 
     const data = await response.json();
     let answer = data.answer;
     let sources = data.sources || [];
+    let owners = data.owners || [];
     let confidence = data.confidence;
-    let reasoning = data.reasoning;
+    let abstain_reason = data.abstain_reason ?? null;
 
     if (typeof answer === 'string') {
       const parsed = parseJsonResponse(answer);
       if (parsed && typeof parsed === 'object') {
         answer = parsed.answer || parsed.response || answer;
         sources = sources.length ? sources : parsed.sources || [];
+        owners = owners.length ? owners : parsed.owners || [];
         confidence = confidence || parsed.confidence;
-        reasoning = reasoning || parsed.reasoning;
+        abstain_reason = abstain_reason ?? parsed.abstain_reason ?? null;
       }
     }
 
-    if (typeof answer === 'object') {
-      reasoning = reasoning || answer.reasoning;
-      sources = sources.length ? sources : answer.sources || [];
-      confidence = confidence || answer.confidence;
-      answer = answer.answer || JSON.stringify(answer, null, 2);
+    if (typeof answer === 'object' && answer !== null) {
+      sources = sources.length ? sources : (answer as any).sources || [];
+      owners = owners.length ? owners : (answer as any).owners || [];
+      confidence = confidence || (answer as any).confidence;
+      abstain_reason = abstain_reason ?? (answer as any).abstain_reason ?? null;
+      answer = (answer as any).answer || JSON.stringify(answer);
     }
 
     return NextResponse.json({
       answer: answer || "I don't have enough information yet.",
       sources,
-      confidence: confidence || "medium",
-      reasoning: reasoning || null,
+      owners,
+      confidence: confidence || 'medium',
+      abstain_reason,
     });
-
   } catch (error) {
-    console.error("Query API error:", error);
-    return NextResponse.json({
-      answer: "Sorry, I'm having trouble connecting right now. Try again in a moment."
-    }, { status: 500 });
+    console.error('Query API error:', error);
+    return NextResponse.json(
+      {
+        answer:
+          "Sorry, I'm having trouble connecting right now. Try again in a moment.",
+      },
+      { status: 500 }
+    );
   }
 }
