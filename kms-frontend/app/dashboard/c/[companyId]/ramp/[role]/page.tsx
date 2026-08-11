@@ -55,7 +55,7 @@ export default async function RampRolePage({
           ← All ramps
         </Link>
       </div>
-      <RampWorkspace plan={plan} />
+      <RampWorkspace plan={plan} companyId={companyId}/>
     </div>
   );
 }
