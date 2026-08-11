@@ -1,7 +1,8 @@
 // components/layout/CompanySidebar.tsx
 // This component renders the sidebar for a specific company's dashboard in the KMS application.
-// It includes navigation links for the company's overview, playbooks, members, analytics, and settings, depending on the user's role.
+// It includes navigation links for the company's overview, first 7 days, members, analytics, and settings, depending on the user's role.
 // The sidebar can be collapsed or expanded, and the state is managed using a custom hook that persists the state in localStorage.
+
 'use client';
 
 import Link from 'next/link';
@@ -14,6 +15,7 @@ import {
   BarChart3,
   PanelLeftClose,
   PanelLeft,
+  Route,
 } from 'lucide-react';
 import { NavItem } from './NavItem';
 import { useSidebarCollapsed } from './sidebar-state';
@@ -67,7 +69,11 @@ export function CompanySidebar({
           </>
         )}
         {collapsed && (
-          <Link href="/dashboard" title="All companies" className="flex justify-center text-zinc-500 hover:text-zinc-200">
+          <Link
+            href="/dashboard"
+            title="All companies"
+            className="flex justify-center text-zinc-500 hover:text-zinc-200"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Link>
         )}
@@ -75,6 +81,7 @@ export function CompanySidebar({
 
       <nav className="flex-1 px-2 py-6 space-y-0.5">
         <NavItem href={base} label="Overview" icon={Home} exact collapsed={collapsed} />
+        <NavItem href={`${base}/ramp`} label="First 7 Days" icon={Route} collapsed={collapsed} />
         <NavItem href={`${base}/playbooks`} label="Playbooks" icon={BookOpen} collapsed={collapsed} />
         {canManage && (
           <NavItem href={`${base}/members`} label="Members" icon={Users} collapsed={collapsed} />
