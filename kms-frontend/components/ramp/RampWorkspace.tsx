@@ -86,9 +86,11 @@ function buildRampContext(plan: Plan): string {
 export function RampWorkspace({
   plan,
   companyId,
+  role,
 }: {
   plan: Plan;
   companyId: string;
+  role: string;
 }) {
   const steps = plan.steps || [];
   const [messages, setMessages] = useState<ChatMessage[]>([
