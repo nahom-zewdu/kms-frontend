@@ -1,11 +1,11 @@
 // components/ramp/RampWorkspace.tsx
-// Ramp plan steps + company-scoped contextual ask.
-// The RampWorkspace component displays the steps of a ramp plan for a specific role within a company in the KMS application. 
-// It allows users to ask questions about the ramp plan, and the answers are grounded in the context of the company's ramp plan. 
-// The component manages chat messages, user input, and loading state, and it fetches answers from an API endpoint that verifies user access and forwards the question along with the ramp context.
+// This component renders a workspace for a ramp plan, displaying the steps and allowing users to ask questions about the plan. 
+// It includes a chat interface that interacts with an API to fetch answers based on the context of the ramp plan.
+
 'use client';
 
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 
 type Evidence = {
   source?: string;
@@ -15,12 +15,18 @@ type Evidence = {
 };
 
 type Step = {
+  id?: string;
   order: number;
   title: string;
   why?: string;
   risk_tier?: string;
   owners?: string[];
-  target?: { type?: string; path?: string; files?: string[] };
+  target?: {
+    type?: string;
+    path?: string;
+    repo?: string | null;
+    files?: string[];
+  };
   evidence?: Evidence[];
 };
 
@@ -65,10 +71,10 @@ function buildRampContext(plan: Plan): string {
     .slice(0, 8)
     .map((s) => {
       const path = s.target?.path ? ` path=${s.target.path}` : '';
-      const files =
-        s.target?.files?.length ? ` files=${s.target.files.slice(0, 3).join(',')}` : '';
-      const owners =
-        s.owners?.length ? ` owners=${s.owners.join(',')}` : '';
+      const files = s.target?.files?.length
+        ? ` files=${s.target.files.slice(0, 3).join(',')}`
+        : '';
+      const owners = s.owners?.length ? ` owners=${s.owners.join(',')}` : '';
       return `${s.order}. ${s.title}${path}${files}${owners} risk=${s.risk_tier || 'review'}`;
     })
     .join('\n');
@@ -93,6 +99,8 @@ export function RampWorkspace({
   role: string;
 }) {
   const steps = plan.steps || [];
+  const roleKey = (role || plan.role || '').toLowerCase();
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
@@ -107,11 +115,9 @@ export function RampWorkspace({
   async function send(preset?: string) {
     const q = (preset ?? input).trim();
     if (!q || loading) return;
-
     if (!preset) setInput('');
     setMessages((m) => [...m, { role: 'user', content: q }]);
     setLoading(true);
-
     try {
       const res = await fetch('/api/query', {
         method: 'POST',
@@ -183,87 +189,111 @@ export function RampWorkspace({
           </p>
         ) : (
           <ol className="space-y-3">
-            {steps.map((s) => (
-              <li
-                key={s.order}
-                className="border border-zinc-800 bg-zinc-950/40 p-5 hover:border-zinc-700 transition-colors"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="shrink-0 text-center">
-                      <div className="text-[10px] uppercase tracking-wide text-zinc-600">
-                        Day
+            {steps.map((s) => {
+              const href = s.id
+                ? `/dashboard/c/${companyId}/ramp/${encodeURIComponent(roleKey)}/step/${s.id}`
+                : null;
+
+              return (
+                <li
+                  key={s.id || s.order}
+                  className="border border-zinc-800 bg-zinc-950/40 p-5 hover:border-zinc-700 transition-colors"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="shrink-0 text-center">
+                        <div className="text-[10px] uppercase tracking-wide text-zinc-600">
+                          Day
+                        </div>
+                        <div className="text-sm tabular-nums text-zinc-400">
+                          {String(s.order).padStart(2, '0')}
+                        </div>
                       </div>
-                      <div className="text-sm tabular-nums text-zinc-400">
-                        {String(s.order).padStart(2, '0')}
+                      <div className="min-w-0">
+                        {href ? (
+                          <Link href={href} className="group">
+                            <h2 className="text-base font-medium tracking-tight text-zinc-100 group-hover:text-white">
+                              {s.title}
+                            </h2>
+                          </Link>
+                        ) : (
+                          <h2 className="text-base font-medium tracking-tight text-zinc-100">
+                            {s.title}
+                          </h2>
+                        )}
+                        {s.target?.path && (
+                          <p className="mt-1 text-xs font-mono text-zinc-500 truncate">
+                            {s.target.path}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="text-base font-medium tracking-tight text-zinc-100">
-                        {s.title}
-                      </h2>
-                      {s.target?.path && (
-                        <p className="mt-1 text-xs font-mono text-zinc-500 truncate">
-                          {s.target.path}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {s.risk_tier && (
-                    <span
-                      className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${riskClass(
-                        s.risk_tier
-                      )}`}
-                    >
-                      {s.risk_tier}
-                    </span>
-                  )}
-                </div>
-
-                {s.why && (
-                  <p className="mt-3 text-sm text-zinc-400 leading-relaxed">
-                    {s.why}
-                  </p>
-                )}
-
-                {s.target?.files && s.target.files.length > 0 && (
-                  <ul className="mt-3 space-y-1">
-                    {s.target.files.slice(0, 4).map((f) => (
-                      <li
-                        key={f}
-                        className="text-xs font-mono text-zinc-500 truncate"
+                    {s.risk_tier && (
+                      <span
+                        className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${riskClass(
+                          s.risk_tier
+                        )}`}
                       >
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                        {s.risk_tier}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  {s.owners && s.owners.length > 0 ? (
-                    <p className="text-sm text-zinc-300">
-                      <span className="text-zinc-600">Ask </span>
-                      <span className="font-medium">{s.owners.join(', ')}</span>
+                  {s.why && (
+                    <p className="mt-3 text-sm text-zinc-400 leading-relaxed">
+                      {s.why}
                     </p>
-                  ) : (
-                    <p className="text-xs text-zinc-600">No owner signal</p>
                   )}
-                  {s.target?.path && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        send(
-                          `What should I know about ${s.target?.path} as a ${plan.role || 'new engineer'}?`
-                        )
-                      }
-                      className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4"
-                    >
-                      Ask about this step
-                    </button>
+
+                  {s.target?.files && s.target.files.length > 0 && (
+                    <ul className="mt-3 space-y-1">
+                      {s.target.files.slice(0, 4).map((f) => (
+                        <li
+                          key={f}
+                          className="text-xs font-mono text-zinc-500 truncate"
+                        >
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </div>
-              </li>
-            ))}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    {s.owners && s.owners.length > 0 ? (
+                      <p className="text-sm text-zinc-300">
+                        <span className="text-zinc-600">Ask </span>
+                        <span className="font-medium">{s.owners.join(', ')}</span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-zinc-600">No owner signal</p>
+                    )}
+
+                    {href && (
+                      <Link
+                        href={href}
+                        className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4"
+                      >
+                        Open step
+                      </Link>
+                    )}
+
+                    {s.target?.path && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          send(
+                            `What should I know about ${s.target?.path} as a ${plan.role || 'new engineer'}?`
+                          )
+                        }
+                        className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4"
+                      >
+                        Ask about this step
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>
@@ -276,7 +306,6 @@ export function RampWorkspace({
             Grounded in this company · abstains when unsure
           </p>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
           {messages.map((m, i) => (
             <div
@@ -307,7 +336,6 @@ export function RampWorkspace({
           {loading && <p className="text-xs text-zinc-600">Thinking…</p>}
           <div ref={endRef} />
         </div>
-
         <div className="p-3 border-t border-zinc-800 flex gap-2 shrink-0">
           <input
             value={input}
