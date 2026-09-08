@@ -186,6 +186,22 @@ export function RampWorkspace({
               ) : null}
             </div>
           )}
+          {totalSteps > 0 && (
+            <div className="mt-6 max-w-md">
+              <div className="flex items-center justify-between text-xs text-zinc-400">
+                <span>
+                  {completedCount} / {totalSteps} complete
+                </span>
+                <span>{overallProgress}%</span>
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-zinc-900 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-zinc-200 transition-all duration-200"
+                  style={{ width: `${overallProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
         </header>
 
         {steps.length === 0 ? (
