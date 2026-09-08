@@ -32,7 +32,11 @@ export async function PATCH(
     `${NLP}/ramp-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/progress`,
     {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Company-Id': companyId,
+        'X-User-Id': user.id,
+      },
       body: JSON.stringify({ status }),
     }
   );
