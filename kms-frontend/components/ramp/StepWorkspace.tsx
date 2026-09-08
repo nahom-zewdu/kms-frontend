@@ -281,7 +281,7 @@ export function StepWorkspace({
               </button>
             )}
             {status === 'completed' && (
-              <span className="text-xs text-emerald-200">Ready for review</span>
+              <span className="text-xs text-emerald-200">Completed</span>
             )}
           </div>
 
