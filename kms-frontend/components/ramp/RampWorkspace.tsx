@@ -7,6 +7,8 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 
+type StepStatus = 'not_started' | 'in_progress' | 'completed';
+
 type Evidence = {
   source?: string;
   module_path?: string;
@@ -21,6 +23,8 @@ type Step = {
   why?: string;
   risk_tier?: string;
   owners?: string[];
+  status?: StepStatus | string | null;
+  progress?: { status?: StepStatus | string | null } | null;
   target?: {
     type?: string;
     path?: string;
@@ -31,6 +35,8 @@ type Step = {
 };
 
 type Plan = {
+  id?: string;
+  plan_id?: string;
   title?: string;
   role?: string;
   employee_name?: string;
@@ -134,6 +140,11 @@ export function RampWorkspace({
 }) {
   const steps = plan.steps || [];
   const roleKey = (role || plan.role || '').toLowerCase();
+  const completedCount = steps.filter(
+    (step) => resolveStepStatus(step) === 'completed'
+  ).length;
+  const totalSteps = steps.length;
+  const overallProgress = totalSteps ? Math.round((completedCount / totalSteps) * 100) : 0;
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -168,11 +179,6 @@ export function RampWorkspace({
         {
           role: 'assistant',
           content: data.answer || "I don't know yet.",
-  const completedCount = steps.filter(
-    (step) => resolveStepStatus(step) === 'completed'
-  ).length;
-  const totalSteps = steps.length;
-  const overallProgress = totalSteps ? Math.round((completedCount / totalSteps) * 100) : 0;
           sources: data.sources || [],
           owners: data.owners || [],
         },
@@ -193,7 +199,6 @@ export function RampWorkspace({
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-10">
-      {/* Path */}
       <div>
         <header className="mb-10 border-b border-zinc-900 pb-8">
           <p className="text-xs text-zinc-600 uppercase tracking-wide mb-2">
@@ -236,7 +241,7 @@ export function RampWorkspace({
               </div>
             </div>
           )}
-                  className={`border p-5 transition-colors ${stepClass}`}
+        </header>
 
         {steps.length === 0 ? (
           <p className="text-zinc-500">
@@ -291,15 +296,22 @@ export function RampWorkspace({
                         )}
                       </div>
                     </div>
-                    {s.risk_tier && (
+                    <div className="flex items-center gap-2">
+                      {s.risk_tier && (
+                        <span
+                          className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${riskClass(
+                            s.risk_tier
+                          )}`}
+                        >
+                          {s.risk_tier}
+                        </span>
+                      )}
                       <span
-                        className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${riskClass(
-                          s.risk_tier
-                        )}`}
+                        className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${statusMeta.className}`}
                       >
-                        {s.risk_tier}
+                        {statusMeta.label}
                       </span>
-                    )}
+                    </div>
                   </div>
 
                   {s.why && (
@@ -325,22 +337,15 @@ export function RampWorkspace({
                     {s.owners && s.owners.length > 0 ? (
                       <p className="text-sm text-zinc-300">
                         <span className="text-zinc-600">Ask </span>
-                    <div className="flex items-center gap-2">
-                      {s.risk_tier && (
-                        <span
-                          className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${riskClass(
-                            s.risk_tier
-                          )}`}
-                        >
-                          {s.risk_tier}
-                        </span>
-                      )}
-                      <span
-                        className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${statusMeta.className}`}
-                      >
-                        {statusMeta.label}
-                      </span>
-                    </div>
+                        <span className="font-medium">{s.owners.join(', ')}</span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-zinc-600">No owner signal</p>
+                    )}
+
+                    {href && (
+                      <Link
+                        href={href}
                         className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4"
                       >
                         Open step
@@ -368,7 +373,6 @@ export function RampWorkspace({
         )}
       </div>
 
-      {/* Ask */}
       <aside className="xl:sticky xl:top-8 flex flex-col border border-zinc-800 bg-zinc-950 max-h-[min(70vh,640px)]">
         <div className="px-4 py-3 border-b border-zinc-800 shrink-0">
           <h3 className="text-sm font-medium">Ask</h3>
