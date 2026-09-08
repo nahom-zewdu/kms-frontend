@@ -202,7 +202,7 @@ export function RampWorkspace({
               </div>
             </div>
           )}
-        </header>
+                  className={`border p-5 transition-colors ${stepClass}`}
 
         {steps.length === 0 ? (
           <p className="text-zinc-500">
@@ -214,11 +214,19 @@ export function RampWorkspace({
               const href = s.id
                 ? `/dashboard/c/${companyId}/ramp/${encodeURIComponent(roleKey)}/step/${s.id}`
                 : null;
+              const status = resolveStepStatus(s);
+              const statusMeta = STEP_STATUS_META[status];
+              const stepClass =
+                status === 'completed'
+                  ? 'border-emerald-500/30 bg-emerald-500/5'
+                  : status === 'in_progress'
+                    ? 'border-amber-500/30 bg-amber-500/5'
+                    : 'border-zinc-800 bg-zinc-950/40';
 
               return (
                 <li
                   key={s.id || s.order}
-                  className="border border-zinc-800 bg-zinc-950/40 p-5 hover:border-zinc-700 transition-colors"
+                  className={`border p-5 transition-colors ${stepClass}`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
