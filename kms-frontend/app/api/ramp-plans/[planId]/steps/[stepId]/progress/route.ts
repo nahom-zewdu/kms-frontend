@@ -15,6 +15,11 @@ export async function PATCH(
   const { planId, stepId } = await params;
   const body = await request.json().catch(() => ({}));
   const status = body?.status;
+  const companyId = user.activeCompany?.id || user.companies[0]?.id;
+
+  if (!companyId) {
+    return NextResponse.json({ error: 'No active company found' }, { status: 403 });
+  }
 
   if (status !== 'in_progress' && status !== 'completed') {
     return NextResponse.json(
