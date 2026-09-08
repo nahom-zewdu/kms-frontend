@@ -24,6 +24,8 @@ type Step = {
   why?: string;
   risk_tier?: string;
   owners?: string[];
+  status?: StepStatus | string | null;
+  progress?: { status?: StepStatus | string | null } | null;
   target?: {
     type?: string;
     path?: string;
@@ -37,6 +39,8 @@ type Step = {
 };
 
 type Plan = {
+  id?: string;
+  plan_id?: string;
   title?: string;
   role?: string;
   employee_name?: string;
@@ -134,6 +138,8 @@ export function StepWorkspace({
   const path = step.target?.path || '';
   const repo = step.target?.repo || null;
   const treeUrl = path ? githubTreeUrl(repo, path) : null;
+  const planId = plan.id || plan.plan_id || '';
+  const stepId = step.id || String(step.order);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -143,7 +149,42 @@ export function StepWorkspace({
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<StepStatus>(() => resolveStepStatus(step));
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  async function updateStatus(nextStatus: StepStatus) {
+    if (isUpdating || !planId) {
+      return;
+    }
+
+    const previousStatus = status;
+    setError(null);
+    setStatus(nextStatus);
+    setIsUpdating(true);
+
+    try {
+      const res = await fetch(
+        `/api/ramp-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/progress`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus }),
+        }
+      );
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Could not update progress');
+      }
+    } catch (err) {
+      setStatus(previousStatus);
+      setError(err instanceof Error && err.message ? err.message : 'Could not update progress.');
+    } finally {
+      setIsUpdating(false);
+    }
+  }
 
   async function send(preset?: string) {
     const q = (preset ?? input).trim();
@@ -176,38 +217,13 @@ export function StepWorkspace({
         ...m,
         { role: 'assistant', content: 'Could not reach the knowledge service.' },
       ]);
-
-  async function send(preset?: string) {
-    const q = (preset ?? input).trim();
-    if (!q || loading) return;
-    if (!preset) setInput('');
-    setMessages((m) => [...m, { role: 'user', content: q }]);
-    setLoading(true);
-    try {
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: q,
-          company_id: companyId,
-          context: buildStepContext(plan, step),
-        }),
-      });
-      const data = await res.json();
-      setMessages((m) => [
-        ...m,
-        {
-          role: 'assistant',
-          content: data.answer || "I don't know yet.",
-          sources: data.sources || [],
-          owners: data.owners || [],
-        },
-      ]);
     } finally {
       setLoading(false);
       setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
   }
+
+  const statusMeta = STEP_STATUS_META[status];
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-10">
@@ -237,6 +253,40 @@ export function StepWorkspace({
               </span>
             )}
           </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span
+              className={`inline-flex items-center border px-2.5 py-1 text-[10px] uppercase tracking-wide ${statusMeta.className}`}
+            >
+              {statusMeta.label}
+            </span>
+            {status === 'not_started' && (
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={() => updateStatus('in_progress')}
+                className="bg-white text-black px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+              >
+                {isUpdating ? 'Updating…' : 'Start step'}
+              </button>
+            )}
+            {status === 'in_progress' && (
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={() => updateStatus('completed')}
+                className="bg-zinc-100 text-zinc-900 px-3 py-1.5 text-xs font-medium disabled:opacity-40"
+              >
+                {isUpdating ? 'Saving…' : 'Mark complete'}
+              </button>
+            )}
+            {status === 'completed' && (
+              <span className="text-xs text-emerald-200">Ready for review</span>
+            )}
+          </div>
+
+          {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+
           {path && (
             <p className="mt-3 font-mono text-sm text-zinc-500">
               {treeUrl ? (
@@ -271,28 +321,6 @@ export function StepWorkspace({
             </p>
           ) : (
             <p className="text-sm text-zinc-600">No owner signal for this path yet.</p>
-          {path && (
-            <p className="mt-3 font-mono text-sm text-zinc-500">
-              {treeUrl ? (
-                <a
-                  href={treeUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-zinc-300 underline underline-offset-4"
-                >
-                  {path}
-                </a>
-              ) : (
-                path
-              )}
-            </p>
-          )}
-          {step.why && (
-            <p className="mt-4 text-sm text-zinc-400 leading-relaxed max-w-2xl">
-              {step.why}
-            </p>
-          )}
-        </header>
           )}
         </section>
 
