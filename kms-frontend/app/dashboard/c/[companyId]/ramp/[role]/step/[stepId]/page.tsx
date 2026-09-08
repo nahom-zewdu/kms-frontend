@@ -26,7 +26,13 @@ export default async function RampStepPage({
 
   const res = await fetch(
     `${NLP}/ramp-plans?company_id=${encodeURIComponent(companyId)}&role=${encodeURIComponent(role)}`,
-    { cache: 'no-store' }
+    {
+      cache: 'no-store',
+      headers: {
+        'X-Company-Id': companyId,
+        'X-User-Id': user.id,
+      },
+    }
   );
   const data = await res.json().catch(() => null);
   const plan = data?.plan || data;
