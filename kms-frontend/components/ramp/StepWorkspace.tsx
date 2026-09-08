@@ -8,6 +8,8 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 
+type StepStatus = 'not_started' | 'in_progress' | 'completed';
+
 type Evidence = {
   source?: string;
   module_path?: string;
