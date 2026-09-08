@@ -53,40 +53,6 @@ type ChatMessage = {
   owners?: string[];
 };
 
-const STEP_STATUS_META: Record<
-  StepStatus,
-  { label: string; className: string; softClassName: string }
-> = {
-  not_started: {
-    label: 'Not started',
-    className: 'border-zinc-700 bg-zinc-900/60 text-zinc-300',
-    softClassName: 'border-zinc-800 bg-zinc-950/50 text-zinc-400',
-  },
-  in_progress: {
-    label: 'In progress',
-    className: 'border-amber-400/30 bg-amber-400/10 text-amber-200',
-    softClassName: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
-  },
-  completed: {
-    label: 'Completed',
-    className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
-    softClassName: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
-  },
-};
-
-function normalizeStepStatus(value: StepStatus | string | null | undefined): StepStatus {
-  if (value === 'not_started' || value === 'in_progress' || value === 'completed') {
-    return value;
-  }
-  return 'not_started';
-}
-
-function resolveStepStatus(step?: Partial<Step>): StepStatus {
-  if (!step) return 'not_started';
-  const status = normalizeStepStatus(step.status ?? step.progress?.status ?? undefined);
-  return status;
-}
-
 function riskClass(tier?: string) {
   if (tier === 'high-risk') return 'text-red-400 border-red-400/30 bg-red-400/5';
   if (tier === 'safe') return 'text-emerald-400 border-emerald-400/30 bg-emerald-400/5';
@@ -325,15 +291,22 @@ export function RampWorkspace({
                     {s.owners && s.owners.length > 0 ? (
                       <p className="text-sm text-zinc-300">
                         <span className="text-zinc-600">Ask </span>
-                        <span className="font-medium">{s.owners.join(', ')}</span>
-                      </p>
-                    ) : (
-                      <p className="text-xs text-zinc-600">No owner signal</p>
-                    )}
-
-                    {href && (
-                      <Link
-                        href={href}
+                    <div className="flex items-center gap-2">
+                      {s.risk_tier && (
+                        <span
+                          className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${riskClass(
+                            s.risk_tier
+                          )}`}
+                        >
+                          {s.risk_tier}
+                        </span>
+                      )}
+                      <span
+                        className={`shrink-0 text-[10px] uppercase tracking-wide border px-2 py-0.5 ${statusMeta.className}`}
+                      >
+                        {statusMeta.label}
+                      </span>
+                    </div>
                         className="text-xs text-zinc-500 hover:text-zinc-300 underline underline-offset-4"
                       >
                         Open step
