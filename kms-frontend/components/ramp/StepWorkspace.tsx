@@ -52,33 +52,6 @@ type ChatMessage = {
   owners?: string[];
 };
 
-const STEP_STATUS_META: Record<StepStatus, { label: string; className: string }> = {
-  not_started: {
-    label: 'Not started',
-    className: 'border-zinc-700 bg-zinc-900/60 text-zinc-200',
-  },
-  in_progress: {
-    label: 'In progress',
-    className: 'border-amber-400/30 bg-amber-400/10 text-amber-200',
-  },
-  completed: {
-    label: 'Completed',
-    className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
-  },
-};
-
-function normalizeStepStatus(value: StepStatus | string | null | undefined): StepStatus {
-  if (value === 'not_started' || value === 'in_progress' || value === 'completed') {
-    return value;
-  }
-  return 'not_started';
-}
-
-function resolveStepStatus(step?: Partial<Step>): StepStatus {
-  if (!step) return 'not_started';
-  return normalizeStepStatus(step.status ?? step.progress?.status ?? undefined);
-}
-
 function riskClass(tier?: string) {
   if (tier === 'high-risk') return 'text-red-400 border-red-400/30 bg-red-400/5';
   if (tier === 'safe') return 'text-emerald-400 border-emerald-400/30 bg-emerald-400/5';
@@ -171,6 +144,38 @@ export function StepWorkspace({
           owners: data.owners || [],
         },
       ]);
+
+  async function updateStatus(nextStatus: StepStatus) {
+    if (isUpdating || !planId) {
+      return;
+    }
+
+    const previousStatus = status;
+    setError(null);
+    setStatus(nextStatus);
+    setIsUpdating(true);
+
+    try {
+      const res = await fetch(
+        `/api/ramp-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/progress`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus }),
+        }
+      );
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Could not update progress');
+      }
+    } catch (err) {
+      setStatus(previousStatus);
+      setError(err instanceof Error && err.message ? err.message : 'Could not update progress.');
+    } finally {
+      setIsUpdating(false);
+    }
+  }
     } catch {
       setMessages((m) => [
         ...m,
