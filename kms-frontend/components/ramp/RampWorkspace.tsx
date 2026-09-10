@@ -48,7 +48,7 @@ type Step = {
     type?: string;
     path?: string;
     repo?: string | null;
-    files?: string[];
+    files?: FileRef[];
   };
   evidence?: Evidence[];
 };
@@ -170,7 +170,7 @@ function buildRampContext(plan: Plan): string {
         .join(',');
       const fileText = files ? ` files=${files}` : '';
       const owners = s.owners?.length ? ` owners=${s.owners.join(',')}` : '';
-      return `${s.order}. ${s.title}${path}${files}${owners} risk=${s.risk_tier || 'review'}`;
+      return `${s.order}. ${s.title}${path}${fileText}${owners} risk=${s.risk_tier || 'review'}`;
     })
     .join('\n');
 
@@ -375,7 +375,7 @@ export function RampWorkspace({
                     </p>
                   )}
 
-                  {s.target?.files && s.target.files.length > 0 && (
+                  {normalizeFiles(s.target?.files).length > 0 && (
                     <ul className="mt-3 space-y-1">
                       {normalizeFiles(s.target?.files).slice(0, 4).map((file) => {
                         const content = file.github_url ? (
