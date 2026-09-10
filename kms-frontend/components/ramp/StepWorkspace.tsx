@@ -413,6 +413,21 @@ export function StepWorkspace({
           <h3 className="text-sm font-medium">Ask about this step</h3>
           <p className="text-xs text-zinc-600 mt-0.5">Scoped context · company only</p>
         </div>
+        <div className="p-3 border-b border-zinc-800 shrink-0">
+          <div className="mb-3 flex flex-wrap gap-2">
+            {suggestedQuestions.map((question) => (
+              <button
+                key={question}
+                type="button"
+                onClick={() => send(question)}
+                disabled={loading}
+                className="text-left border border-zinc-800 bg-zinc-950 px-2 py-1.5 text-[11px] text-zinc-300 hover:border-zinc-600 disabled:opacity-40"
+              >
+                {question}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
           {messages.map((m, i) => (
             <div key={i} className={m.role === 'user' ? 'text-right' : 'text-left'}>
