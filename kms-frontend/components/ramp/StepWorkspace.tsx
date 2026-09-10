@@ -291,6 +291,11 @@ export function StepWorkspace({
     'What does this code/file do?',
   ];
 
+  function githubBlobUrl(repo: string, path: string): string | null | undefined {
+    if (!repo || !path) return null;
+    return `https://github.com/${repo}/blob/${path}`;
+  }
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-10">
       <div>
