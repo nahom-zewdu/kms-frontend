@@ -49,7 +49,7 @@ type Step = {
     type?: string;
     path?: string;
     repo?: string | null;
-    files?: string[];
+    files?: FileRef[];
   };
   summary?: { what?: string | null; how?: string | null; where?: string | null };
   resources?: { type?: string; label?: string; url?: string }[];
@@ -394,14 +394,14 @@ export function StepWorkspace({
           <h2 className="text-xs uppercase tracking-wide text-zinc-600 mb-3">
             Key files
           </h2>
-          {(step.target?.files || []).length === 0 ? (
+          {normalizeFiles(step.target?.files).length === 0 ? (
             <p className="text-sm text-zinc-600">No files attached to this step.</p>
           ) : (
             <ul className="space-y-2">
-              {(step.target?.files || []).map((f) => {
-                const href = githubBlobUrl(repo, f);
+              {normalizeFiles(step.target?.files).map((file) => {
+                const href = file.github_url || (repo ? githubBlobUrl(repo, file.path) : null);
                 return (
-                  <li key={f} className="text-sm font-mono text-zinc-400">
+                  <li key={file.key} className="text-sm font-mono text-zinc-400">
                     {href ? (
                       <a
                         href={href}
@@ -409,10 +409,10 @@ export function StepWorkspace({
                         rel="noreferrer"
                         className="hover:text-zinc-200 underline underline-offset-4"
                       >
-                        {f}
+                        {file.label}
                       </a>
                     ) : (
-                      f
+                      file.label
                     )}
                   </li>
                 );
