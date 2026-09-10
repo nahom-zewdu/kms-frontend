@@ -212,6 +212,13 @@ export function StepWorkspace({
           content: data.answer || "I don't know yet.",
           sources: data.sources || [],
           owners: data.owners || [],
+          confidence:
+            data.confidence === 'high' ||
+            data.confidence === 'medium' ||
+            data.confidence === 'low'
+              ? data.confidence
+              : undefined,
+          abstain_reason: data.abstain_reason || null,
         },
       ]);
     } catch {
