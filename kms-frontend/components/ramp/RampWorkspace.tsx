@@ -164,9 +164,11 @@ function buildRampContext(plan: Plan): string {
     .slice(0, 8)
     .map((s) => {
       const path = s.target?.path ? ` path=${s.target.path}` : '';
-      const files = s.target?.files?.length
-        ? ` files=${s.target.files.slice(0, 3).join(',')}`
-        : '';
+      const files = normalizeFiles(s.target?.files)
+        .slice(0, 3)
+        .map((file) => file.label)
+        .join(',');
+      const fileText = files ? ` files=${files}` : '';
       const owners = s.owners?.length ? ` owners=${s.owners.join(',')}` : '';
       return `${s.order}. ${s.title}${path}${files}${owners} risk=${s.risk_tier || 'review'}`;
     })
