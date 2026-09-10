@@ -375,14 +375,29 @@ export function RampWorkspace({
 
                   {s.target?.files && s.target.files.length > 0 && (
                     <ul className="mt-3 space-y-1">
-                      {s.target.files.slice(0, 4).map((f) => (
-                        <li
-                          key={f}
-                          className="text-xs font-mono text-zinc-500 truncate"
-                        >
-                          {f}
-                        </li>
-                      ))}
+                      {normalizeFiles(s.target?.files).slice(0, 4).map((file) => {
+                        const content = file.github_url ? (
+                          <a
+                            href={file.github_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-zinc-200 underline underline-offset-4"
+                          >
+                            {file.label}
+                          </a>
+                        ) : (
+                          file.label
+                        );
+
+                        return (
+                          <li
+                            key={file.key}
+                            className="text-xs font-mono text-zinc-500 truncate"
+                          >
+                            {content}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
 
