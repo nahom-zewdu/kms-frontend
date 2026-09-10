@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         question: question,
         company_id: companyId,
-        cotext: context,
+        context: context,
       }),
     });
 
