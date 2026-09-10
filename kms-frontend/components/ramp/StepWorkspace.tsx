@@ -17,6 +17,25 @@ type Evidence = {
   record_id?: string;
 };
 
+type FileRef =
+  | string
+  | {
+      path?: string | null;
+      file_name?: string | null;
+      github_url?: string | null;
+      module_path?: string | null;
+      repository_id?: string | null;
+    }
+  | null
+  | undefined;
+
+type NormalizedFile = {
+  key: string;
+  label: string;
+  path: string;
+  github_url?: string | null;
+};
+
 type Step = {
   id?: string;
   order: number;
