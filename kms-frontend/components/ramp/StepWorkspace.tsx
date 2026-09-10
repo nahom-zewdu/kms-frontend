@@ -440,6 +440,16 @@ export function StepWorkspace({
               >
                 {m.content}
               </div>
+              {m.role === 'assistant' && m.abstain_reason && (
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-500">
+                  Not enough company evidence
+                </p>
+              )}
+              {m.role === 'assistant' && m.confidence && !m.abstain_reason && (
+                <p className="mt-1 text-[10px] uppercase tracking-wide text-zinc-500">
+                  {m.confidence.charAt(0).toUpperCase() + m.confidence.slice(1)} confidence
+                </p>
+              )}
               {m.role === 'assistant' && m.owners && m.owners.length > 0 && (
                 <p className="text-[11px] text-zinc-500 mt-1">
                   Owners: {m.owners.join(', ')}
