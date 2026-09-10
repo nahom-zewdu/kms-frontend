@@ -54,6 +54,8 @@ type ChatMessage = {
   content: string;
   sources?: SourceRef[];
   owners?: string[];
+  confidence?: 'high' | 'medium' | 'low';
+  abstain_reason?: string | null;
 };
 
 const STEP_STATUS_META: Record<StepStatus, { label: string; className: string }> = {
