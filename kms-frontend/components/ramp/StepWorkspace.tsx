@@ -122,9 +122,38 @@ function githubTreeUrl(repo: string | null | undefined, path: string) {
   return `https://github.com/${repo}/tree/HEAD/${path}`;
 }
 
-function githubBlobUrl(repo: string | null | undefined, filePath: string) {
-  if (!repo) return null;
-  return `https://github.com/${repo}/blob/HEAD/${filePath}`;
+function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
+  if (!Array.isArray(files)) return [];
+
+  return files.flatMap((entry, index) => {
+    if (typeof entry === 'string') {
+      const value = entry.trim();
+      if (!value) return [];
+      return [{ key: `${value}#${index}`, label: value, path: value }];
+    }
+
+    if (!entry || typeof entry !== 'object') return [];
+
+    const file = entry as {
+      path?: string | null;
+      file_name?: string | null;
+      github_url?: string | null;
+    };
+    const path = typeof file.path === 'string' ? file.path.trim() : '';
+    const fileName = typeof file.file_name === 'string' ? file.file_name.trim() : '';
+    const label = path || fileName || `file-${index}`;
+    const key = path ? `${path}#${index}` : fileName ? `${fileName}#${index}` : `file-${index}`;
+
+    return [
+      {
+        key,
+        label,
+        path: path || fileName || label,
+        github_url:
+          typeof file.github_url === 'string' && file.github_url.trim() ? file.github_url.trim() : null,
+      },
+    ];
+  });
 }
 
 function buildStepContext(plan: Plan, step: Step): string {
