@@ -233,6 +233,12 @@ export function StepWorkspace({
   }
 
   const statusMeta = STEP_STATUS_META[status];
+  const suggestedQuestions = [
+    'Why do I need to understand this?',
+    'Where should I start?',
+    'What should I understand before making changes?',
+    'What does this code/file do?',
+  ];
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-10">
