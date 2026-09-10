@@ -158,7 +158,10 @@ function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
 
 function buildStepContext(plan: Plan, step: Step): string {
   const path = step.target?.path || '';
-  const files = (step.target?.files || []).slice(0, 6).join(', ');
+  const files = normalizeFiles(step.target?.files)
+    .slice(0, 6)
+    .map((file) => file.label)
+    .join(', ');
   const owners = (step.owners || []).join(', ');
   return [
     `Ramp step context only (do not invent people or paths).`,
