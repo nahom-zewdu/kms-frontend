@@ -16,6 +16,19 @@ type Evidence = {
   record_id?: string;
 };
 
+type ImplementationBoundary = {
+  method?: string | null;
+  path?: string | null;
+  handler?: string | null;
+  operation?: string | null;
+  next_inspection_target?: string | null;
+};
+
+type ImplementationBranch = {
+  label?: string | null;
+  operation?: ImplementationBoundary | null;
+};
+
 type FileRef =
   | string
   | {
@@ -51,6 +64,8 @@ type Step = {
     files?: FileRef[];
   };
   evidence?: Evidence[];
+  implementation_boundary?: ImplementationBoundary | null;
+  implementation_branches?: ImplementationBranch[];
 };
 
 type Plan = {
@@ -373,6 +388,38 @@ export function RampWorkspace({
                     <p className="mt-3 text-sm text-zinc-400 leading-relaxed">
                       {s.why}
                     </p>
+                  )}
+                  {(s.implementation_boundary || (s.implementation_branches || []).length > 0) && (
+                    <div className="mt-4 border-l border-zinc-800 pl-4">
+                      <p className="text-[10px] uppercase tracking-wide text-zinc-600 mb-2">
+                        Implementation boundary
+                      </p>
+                      {s.implementation_boundary && (
+                        <div className="space-y-1 text-xs font-mono text-zinc-400">
+                          {(s.implementation_boundary.method || s.implementation_boundary.path) && (
+                            <p className="text-zinc-300">
+                              {[s.implementation_boundary.method, s.implementation_boundary.path].filter(Boolean).join(' ')}
+                            </p>
+                          )}
+                          {s.implementation_boundary.handler && <p>{s.implementation_boundary.handler}</p>}
+                          {s.implementation_boundary.operation && <p className="text-zinc-500">→ {s.implementation_boundary.operation}</p>}
+                        </div>
+                      )}
+                      {s.implementation_boundary?.next_inspection_target && (
+                        <p className="mt-2 text-[11px] text-zinc-600">
+                          Next: <span className="font-mono text-zinc-500">{s.implementation_boundary.next_inspection_target}</span>
+                        </p>
+                      )}
+                      {(s.implementation_branches || []).length > 0 && (
+                        <div className="mt-2 space-y-1 text-xs font-mono text-zinc-500">
+                          {(s.implementation_branches || []).map((branch, index) => (
+                            <p key={branch.label || index}>
+                              {branch.label ? branch.label + ': ' : ''}{branch.operation?.operation || branch.operation?.next_inspection_target || 'branch'}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {normalizeFiles(s.target?.files).length > 0 && (
