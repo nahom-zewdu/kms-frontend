@@ -17,6 +17,22 @@ type Evidence = {
   record_id?: string;
 };
 
+type ImplementationBoundary = {
+  method?: string | null;
+  path?: string | null;
+  handler?: string | null;
+  handler_file?: string | null;
+  receiver_field?: string | null;
+  operation?: string | null;
+  call_file?: string | null;
+  next_inspection_target?: string | null;
+};
+
+type ImplementationBranch = {
+  label?: string | null;
+  operation?: ImplementationBoundary | null;
+};
+
 type FileRef =
   | string
   | {
@@ -55,6 +71,8 @@ type Step = {
   resources?: { type?: string; label?: string; url?: string }[];
   checklist?: { id: string; label: string; done?: boolean }[];
   evidence?: Evidence[];
+  implementation_boundary?: ImplementationBoundary | null;
+  implementation_branches?: ImplementationBranch[];
 };
 
 type Plan = {
@@ -443,6 +461,86 @@ export function StepWorkspace({
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {(step.implementation_boundary || (step.implementation_branches || []).length > 0) && (
+          <section className="mb-10 border border-zinc-800 bg-zinc-950/50 p-5">
+            <h2 className="text-xs uppercase tracking-wide text-zinc-600 mb-4">
+              Implementation boundary
+            </h2>
+
+            {step.implementation_boundary && (
+              <div className="space-y-2 text-sm">
+                {step.implementation_boundary.method && step.implementation_boundary.path && (
+                  <div className="font-mono text-zinc-200">
+                    {step.implementation_boundary.method} {step.implementation_boundary.path}
+                  </div>
+                )}
+                {step.implementation_boundary.handler && (
+                  <div className="text-zinc-400">
+                    <span className="text-zinc-600">Handler </span>
+                    <span className="font-mono text-zinc-300">
+                      {step.implementation_boundary.handler}
+                    </span>
+                    {step.implementation_boundary.handler_file && (
+                      <span className="ml-2 text-xs font-mono text-zinc-600">
+                        {step.implementation_boundary.handler_file}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {(step.implementation_boundary.receiver_field || step.implementation_boundary.operation) && (
+                  <div className="text-zinc-400">
+                    <span className="text-zinc-600">Calls </span>
+                    <span className="font-mono text-zinc-300">
+                      {[step.implementation_boundary.receiver_field, step.implementation_boundary.operation]
+                        .filter(Boolean)
+                        .join('.')}
+                    </span>
+                    {step.implementation_boundary.call_file && (
+                      <span className="ml-2 text-xs font-mono text-zinc-600">
+                        {step.implementation_boundary.call_file}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {step.implementation_boundary.next_inspection_target && (
+                  <div className="pt-2 border-t border-zinc-900">
+                    <span className="text-xs uppercase tracking-wide text-zinc-600">
+                      Next inspection
+                    </span>
+                    <p className="mt-1 font-mono text-sm text-zinc-300">
+                      {step.implementation_boundary.next_inspection_target}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(step.implementation_branches || []).length > 0 && (
+              <div className={step.implementation_boundary ? 'mt-5 pt-5 border-t border-zinc-900' : ''}>
+                <p className="text-xs uppercase tracking-wide text-zinc-600 mb-3">
+                  Branches
+                </p>
+                <div className="space-y-3">
+                  {(step.implementation_branches || []).map((branch, index) => (
+                    <div key={branch.label || index} className="text-sm">
+                      {branch.label && (
+                        <p className="text-zinc-400 mb-1">{branch.label}</p>
+                      )}
+                      {branch.operation && (
+                        <p className="font-mono text-zinc-300">
+                          {[branch.operation.receiver_field, branch.operation.operation]
+                            .filter(Boolean)
+                            .join('.')}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
