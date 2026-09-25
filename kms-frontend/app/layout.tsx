@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'KMS Onboard',
-  description: 'Intelligent onboarding for engineering teams',
+  title: 'KMS — Engineering onboarding, grounded in your codebase',
+  description: 'KMS helps engineers find where to start in an unfamiliar codebase.',
   icons: { icon: '/favicon.ico' },
 };
 
