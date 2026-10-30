@@ -19,13 +19,18 @@ export async function GET(request: Request) {
   if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const supabase = await createServerSupabase();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('company_integrations')
     .select('id, provider, external_id, is_active, metadata, created_at')
     .eq('company_id', companyId)
     .eq('is_active', true);
 
-  return NextResponse.json({ integrations: data || [] });
+  if (error) {
+    console.error('[api/integrations:get]', error.message);
+    return NextResponse.json({ error: 'Failed to load integrations.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ integrations: data });
 }
 
 export async function DELETE(request: Request) {
@@ -39,11 +44,16 @@ export async function DELETE(request: Request) {
   }
 
   const supabase = await createServerSupabase();
-  await supabase
+  const { error } = await supabase
     .from('company_integrations')
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('company_id', companyId)
     .eq('provider', provider);
+
+  if (error) {
+    console.error('[api/integrations:delete]', error.message);
+    return NextResponse.json({ error: 'Failed to disconnect integration.' }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
