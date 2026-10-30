@@ -1,10 +1,7 @@
-// app/dashboard/company/new/page.tsx
-// It provides a form for the user to enter the company name and create it.
-// Upon successful creation, it switches the active company to the newly created one and redirects the user to the company's dashboard.
-
 'use client';
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function NewCompanyPage() {
   const router = useRouter();
@@ -12,7 +9,8 @@ export default function NewCompanyPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleCreate = async () => {
+  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
     setError('');
@@ -31,7 +29,6 @@ export default function NewCompanyPage() {
       return;
     }
 
-    // Switch to the new company
     await fetch('/api/companies/switch', {
       method: 'POST',
       body: JSON.stringify({ companyId: data.company_id }),
@@ -41,26 +38,37 @@ export default function NewCompanyPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20">
-      <h1 className="text-4xl font-semibold tracking-tighter mb-8">Create Company</h1>
-      
-      {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
-
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Company name"
-        className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-lg outline-none focus:border-white mb-6"
+    <div className="mx-auto max-w-md">
+      <PageHeader
+        title="Create company"
+        description="A company is the workspace for a codebase and its first-week paths."
       />
 
-      <button
-        onClick={handleCreate}
-        disabled={loading || !name.trim()}
-        className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 disabled:opacity-50 transition"
-      >
-        {loading ? 'Creating...' : 'Create Company'}
-      </button>
+      <form onSubmit={handleCreate} className="space-y-4">
+        {error && <p className="text-sm text-red-400">{error}</p>}
+
+        <div>
+          <label className="kms-label" htmlFor="company-name">
+            Company name
+          </label>
+          <input
+            id="company-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Acme Engineering"
+            className="kms-input"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !name.trim()}
+          className="kms-btn-primary w-full"
+        >
+          {loading ? 'Creating...' : 'Create company'}
+        </button>
+      </form>
     </div>
   );
 }
