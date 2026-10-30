@@ -39,7 +39,6 @@ export default async function PlaybookPage({ params }: Props) {
     <PlaybookViewer 
       playbook={playbookContent} 
       role={roleKey} 
-      playbookId={playbook.id}
     />
   );
 }
