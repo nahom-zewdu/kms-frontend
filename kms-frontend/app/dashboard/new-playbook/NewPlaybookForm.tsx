@@ -1,14 +1,11 @@
-// app/dashboard/new-playbook/NewPlaybookForm.tsx
-// This is the form for creating a new playbook. 
-// It allows the user to input a role and an optional employee name, and handles the creation of the playbook.
-
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface Props {
   limitReached: boolean;
-  user: any;
+  user: { plan?: string };
 }
 
 export default function NewPlaybookForm({ limitReached, user }: Props) {
@@ -30,52 +27,62 @@ export default function NewPlaybookForm({ limitReached, user }: Props) {
     if (res.ok) {
       router.push(`/onboard/${role.toLowerCase().replace(/\s+/g, '-')}`);
     } else {
-      alert("Failed to create playbook");
+      alert('Failed to create playbook');
     }
     setLoading(false);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20">
-      <h1 className="text-4xl font-semibold tracking-tighter mb-8">Create New Playbook</h1>
-      
+    <div className="mx-auto max-w-md">
+      <PageHeader
+        title="Create playbook"
+        description="Generate an onboarding workspace for a role."
+      />
+
       {limitReached && (
-        <div className="bg-red-950 border border-red-900 p-6 rounded-2xl mb-8">
+        <div className="mb-6 border border-red-900 bg-red-950/40 p-4 text-sm text-red-200">
           You have reached your plan limit ({user.plan}). Upgrade to Pro for unlimited playbooks.
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div>
-          <label className="block text-sm text-zinc-500 mb-2">Role / Position</label>
+          <label className="kms-label" htmlFor="playbook-role">
+            Role
+          </label>
           <input
+            id="playbook-role"
             type="text"
             value={role}
             onChange={(e) => setRole(e.target.value)}
             placeholder="e.g. Backend Engineer"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-lg outline-none focus:border-white"
+            className="kms-input"
             disabled={limitReached}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-zinc-500 mb-2">Employee Name (optional)</label>
+          <label className="kms-label" htmlFor="playbook-name">
+            Employee name (optional)
+          </label>
           <input
+            id="playbook-name"
             type="text"
             value={employeeName}
             onChange={(e) => setEmployeeName(e.target.value)}
             placeholder="e.g. Sarah Chen"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-lg outline-none focus:border-white"
+            className="kms-input"
             disabled={limitReached}
           />
         </div>
 
         <button
+          type="button"
           onClick={handleCreate}
           disabled={!role || loading || limitReached}
-          className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 disabled:opacity-50 transition"
+          className="kms-btn-primary w-full"
         >
-          {loading ? "Generating..." : "Generate Playbook"}
+          {loading ? 'Generating...' : 'Generate playbook'}
         </button>
       </div>
     </div>
