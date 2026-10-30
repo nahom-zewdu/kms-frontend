@@ -5,7 +5,6 @@ import {
   ChevronRight,
   CircleDot,
   GitBranch,
-  Github,
   MessageSquare,
   Route,
   Sparkles,
@@ -295,7 +294,7 @@ export default function Home() {
       <section className="border-t border-zinc-900 bg-[#090909]">
         <div className="mx-auto max-w-7xl px-6 py-20 text-center lg:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl">
-            <Github className="mx-auto h-5 w-5 text-zinc-600" />
+            <GitBranch className="mx-auto h-5 w-5 text-zinc-600" />
             <h2 className="mt-5 text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">
               Give your next engineer a better starting point.
             </h2>
