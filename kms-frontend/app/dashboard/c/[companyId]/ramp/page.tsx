@@ -10,6 +10,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Route } from 'lucide-react';
 import { GenerateRampForm } from '@/components/ramp/GenerateRampForm';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default async function RampIndexPage({
   params,
@@ -38,35 +40,41 @@ export default async function RampIndexPage({
   const canGenerate = membership.role === 'admin' || membership.role === 'manager';
 
   return (
-    <div className="max-w-5xl">
-      <div className="mb-12">
-        <h1 className="text-4xl font-semibold tracking-tighter">First 7 Days</h1>
-        <p className="text-zinc-500 mt-2">
-          Live ramp paths for this company ordered modules, risk, and owners when known.
-        </p>
-      </div>
+    <div className="min-w-0 max-w-5xl">
+      <PageHeader
+        kicker="Company"
+        title="First 7 Days"
+        description="Live onboarding paths that connect modules, risks, and owners."
+      />
 
-      <section className="mb-14">
-        <h2 className="text-xs uppercase tracking-wide text-zinc-600 mb-4">Active ramps</h2>
+      <section aria-labelledby="active-ramps-heading" className="mb-8">
+        <h2 id="active-ramps-heading" className="mb-3 text-sm font-medium text-zinc-300">
+          Active ramps
+        </h2>
 
-        {plans && plans.length > 0 ? (
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {plans.map((p) => (
-              <li key={p.id}>
+        {error ? (
+          <div role="alert" className="border border-red-900 bg-red-950/30 p-4 text-sm text-red-300">
+            Could not load active ramps. Refresh the page to try again.
+          </div>
+        ) : plans && plans.length > 0 ? (
+          <ul className="grid min-w-0 gap-2 sm:grid-cols-2">
+            {plans.map((plan) => (
+              <li key={plan.id} className="min-w-0">
                 <Link
-                  href={`/dashboard/c/${companyId}/ramp/${encodeURIComponent(p.role)}`}
-                  className="block border border-zinc-800 p-6 hover:border-zinc-600 transition-colors h-full"
+                  href={`/dashboard/c/${companyId}/ramp/${encodeURIComponent(plan.role)}`}
+                  className="kms-card block h-full min-w-0 p-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900/40 sm:p-5"
                 >
-                  <div className="font-medium tracking-tight">
-                    First 7 Days — {p.role}
+                  <div className="break-words font-medium tracking-tight">
+                    First 7 Days — {plan.role}
                   </div>
-                  <div className="text-sm text-zinc-500 mt-1 font-mono">{p.role}</div>
-                  {p.employee_name ? (
-                    <div className="text-sm text-zinc-400 mt-2">For {p.employee_name}</div>
+                  {plan.employee_name ? (
+                    <div className="mt-1 break-words text-sm text-zinc-400">
+                      For {plan.employee_name}
+                    </div>
                   ) : null}
-                  <div className="text-xs text-zinc-600 mt-4">
-                    {p.created_at
-                      ? `Updated ${new Date(p.created_at).toLocaleDateString()}`
+                  <div className="mt-3 text-xs text-zinc-600">
+                    {plan.created_at
+                      ? `Updated ${new Date(plan.created_at).toLocaleDateString()}`
                       : null}
                   </div>
                 </Link>
@@ -74,13 +82,11 @@ export default async function RampIndexPage({
             ))}
           </ul>
         ) : (
-          <div className="border border-zinc-800 border-dashed p-12 text-center">
-            <Route className="w-8 h-8 mx-auto text-zinc-700 mb-4" />
-            <p className="text-zinc-400">No active ramps yet</p>
-            <p className="text-sm text-zinc-600 mt-1">
-              Generate one after a repository baseline is synced.
-            </p>
-          </div>
+          <EmptyState
+            icon={Route}
+            title="No active ramps yet"
+            description="Generate one after a repository baseline is synced."
+          />
         )}
       </section>
 

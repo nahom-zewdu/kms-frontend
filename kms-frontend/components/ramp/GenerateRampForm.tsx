@@ -7,6 +7,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 const ROLES = [
   'backend-engineer',
@@ -48,52 +49,64 @@ export function GenerateRampForm({ companyId }: { companyId: string }) {
     }
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void generate();
+  }
+
   return (
-    <div className="border border-zinc-800 p-6 space-y-5">
+    <form onSubmit={handleSubmit} className="kms-card space-y-4 p-4 sm:p-5">
       <div>
         <h2 className="text-sm font-medium text-zinc-200">Generate new ramp</h2>
-        <p className="text-xs text-zinc-600 mt-1">
+        <p className="mt-1 text-sm text-zinc-500">
           Built from this company&apos;s indexed modules and ownership signals.
         </p>
       </div>
 
-      <label className="block">
-        <span className="text-xs text-zinc-500 uppercase tracking-wide">Role</span>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="mt-2 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
-        >
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="kms-label" htmlFor="ramp-role">
+            Role
+          </label>
+          <select
+            id="ramp-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="kms-select w-full"
+          >
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <label className="block">
-        <span className="text-xs text-zinc-500 uppercase tracking-wide">
-          New hire name (optional)
-        </span>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Asha"
-          className="mt-2 w-full bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
-        />
-      </label>
+        <div>
+          <label className="kms-label" htmlFor="ramp-employee-name">
+            New hire name <span className="normal-case tracking-normal">(optional)</span>
+          </label>
+          <input
+            id="ramp-employee-name"
+            type="text"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Asha"
+            className="kms-input"
+          />
+        </div>
+      </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
 
       <button
-        type="button"
+        type="submit"
         disabled={loading}
-        onClick={generate}
-        className="bg-white text-black px-6 py-3 text-sm font-medium hover:bg-zinc-200 disabled:opacity-50"
+        className="kms-btn-primary w-full sm:w-auto"
       >
         {loading ? 'Generating…' : 'Generate ramp'}
       </button>
-    </div>
+    </form>
   );
 }
