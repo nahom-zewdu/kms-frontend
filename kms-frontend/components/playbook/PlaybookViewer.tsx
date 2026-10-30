@@ -264,7 +264,9 @@ export function PlaybookViewer({ playbook, role }: PlaybookViewerProps) {
                       <div className="text-sm text-zinc-400">{mod.file_count} files</div>
                     </div>
                     <div className="shrink-0 bg-zinc-800 px-2 py-1 text-xs">
-                      {Math.round(mod.importance * 100)}% importance
+                      {typeof mod.importance === 'number'
+                        ? `${Math.round(mod.importance * 100)}% importance`
+                        : 'Importance unavailable'}
                     </div>
                   </button>
                 ))}
