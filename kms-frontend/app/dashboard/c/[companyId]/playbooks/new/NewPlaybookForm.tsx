@@ -1,70 +1,100 @@
-// app/dashboard/c/[companyId]/playbooks/new/NewPlaybookForm.tsx
-// This component provides a form for creating a new playbook for a specific company in the KMS application.
-// It allows the user to input a role and an optional employee name, then sends a request to generate the playbook via an API call.
-
 'use client';
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function NewPlaybookForm({ companyId }: { companyId: string }) {
   const router = useRouter();
   const [role, setRole] = useState('');
   const [employeeName, setEmployeeName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleCreate = async () => {
-    if (!role) return;
+  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalizedRole = role.trim();
+    if (!normalizedRole) return;
+
     setLoading(true);
+    setError('');
 
-    const res = await fetch('/api/playbooks/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role, employeeName, companyId }),
-    });
+    try {
+      const response = await fetch('/api/playbooks/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: normalizedRole,
+          employeeName: employeeName.trim() || undefined,
+          companyId,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
 
-    if (res.ok) {
+      if (!response.ok) {
+        throw new Error(payload.error || 'Failed to create playbook.');
+      }
+
       router.push(`/dashboard/c/${companyId}/playbooks`);
-    } else {
-      alert('Failed to create playbook');
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to create playbook.'
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20">
-      <h1 className="text-4xl font-semibold tracking-tighter mb-8">Create Playbook</h1>
+    <div className="mx-auto max-w-md">
+      <PageHeader
+        title="Create playbook"
+        description="Generate an onboarding workspace from this company."
+      />
 
-      <div className="space-y-6">
+      <form onSubmit={handleCreate} className="space-y-4">
+        {error && <p className="text-sm text-red-400" role="alert">{error}</p>}
+
         <div>
-          <label className="block text-sm text-zinc-500 mb-2">Role</label>
+          <label className="kms-label" htmlFor="playbook-role">
+            Role
+          </label>
           <input
+            id="playbook-role"
             type="text"
             value={role}
             onChange={(e) => setRole(e.target.value)}
             placeholder="e.g. Backend Engineer"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-lg outline-none focus:border-white"
+            className="kms-input"
+            required
           />
         </div>
 
         <div>
-          <label className="block text-sm text-zinc-500 mb-2">Employee Name (optional)</label>
+          <label className="kms-label" htmlFor="employee-name">
+            Employee name (optional)
+          </label>
           <input
+            id="employee-name"
             type="text"
             value={employeeName}
             onChange={(e) => setEmployeeName(e.target.value)}
             placeholder="e.g. Sarah Chen"
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-lg outline-none focus:border-white"
+            className="kms-input"
+            autoComplete="name"
           />
         </div>
 
         <button
-          onClick={handleCreate}
-          disabled={!role || loading}
-          className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 disabled:opacity-50 transition"
+          type="submit"
+          disabled={!role.trim() || loading}
+          className="kms-btn-primary w-full"
         >
-          {loading ? 'Generating...' : 'Generate Playbook'}
+          {loading ? 'Generating...' : 'Generate playbook'}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

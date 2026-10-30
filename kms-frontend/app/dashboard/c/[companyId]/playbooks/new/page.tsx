@@ -1,8 +1,7 @@
-// app/dashboard/c/[companyId]/playbooks/new/page.tsx
-// This page allows users with sufficient permissions to create a new playbook for a specific company in the KMS application.
-
 import { getUserContext } from '@/lib/auth';
 import NewPlaybookForm from './NewPlaybookForm';
+import Link from 'next/link';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default async function NewPlaybookPage({
   params,
@@ -13,9 +12,21 @@ export default async function NewPlaybookPage({
   const user = await getUserContext();
   if (!user) return null;
 
-  const membership = user.companies.find(c => c.id === companyId);
-  if (!membership || membership.role === 'member') {
-    return <div className="text-red-400">Insufficient permissions</div>;
+  const membership = user.companies.find((c) => c.id === companyId);
+  if (!membership) return null;
+
+  if (membership.role === 'member') {
+    return (
+      <PageHeader
+        title="Insufficient permissions"
+        description="Only managers and admins can create playbooks for this company."
+        actions={
+          <Link href={`/dashboard/c/${companyId}/playbooks`} className="kms-btn-secondary">
+            Back to playbooks
+          </Link>
+        }
+      />
+    );
   }
 
   return <NewPlaybookForm companyId={companyId} />;
