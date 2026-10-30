@@ -1,11 +1,7 @@
-// app/dashboard/c/[companyId]/page.tsx
-// This page displays the overview of a specific company in the KMS dashboard.
-// It fetches the user context and checks if the user has access to the specified company.
-// If the user is not logged in or does not have access, they are redirected to the login page or dashboard, respectively.
-
 import { getUserContext } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default async function CompanyOverviewPage({
   params,
@@ -19,35 +15,51 @@ export default async function CompanyOverviewPage({
   const membership = user.companies.find((c) => c.id === companyId);
   if (!membership) redirect('/dashboard');
 
+  const canManage = membership.role === 'admin' || membership.role === 'manager';
+
   return (
     <div>
-      <h1 className="text-4xl font-semibold tracking-tighter">{membership.name}</h1>
-      <p className="text-zinc-500 mt-2 capitalize">Role: {membership.role}</p>
+      <PageHeader
+        kicker="Company"
+        title={membership.name}
+        description={`Your role: ${membership.role}`}
+      />
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <Link
           href={`/dashboard/c/${companyId}/ramp`}
-          className="border border-zinc-800 p-6 hover:border-zinc-600 transition-colors"
+          className="kms-card p-5 transition-colors hover:border-zinc-600"
         >
           <div className="font-medium">First 7 Days</div>
-          <div className="text-sm text-zinc-500 mt-1">
+          <div className="mt-1 text-sm text-zinc-500">
             Live ramp path from this company&apos;s codebase
           </div>
         </Link>
         <Link
           href={`/dashboard/c/${companyId}/playbooks`}
-          className="border border-zinc-800 p-6 hover:border-zinc-600 transition-colors"
+          className="kms-card p-5 transition-colors hover:border-zinc-600"
         >
           <div className="font-medium">Playbooks</div>
-          <div className="text-sm text-zinc-500 mt-1">Onboarding workspaces</div>
+          <div className="mt-1 text-sm text-zinc-500">Onboarding workspaces</div>
         </Link>
-        <Link
-          href={`/dashboard/c/${companyId}/settings`}
-          className="border border-zinc-800 p-6 hover:border-zinc-600 transition-colors"
-        >
-          <div className="font-medium">Settings</div>
-          <div className="text-sm text-zinc-500 mt-1">Integrations &amp; company</div>
-        </Link>
+        {canManage && (
+          <Link
+            href={`/dashboard/c/${companyId}/members`}
+            className="kms-card p-5 transition-colors hover:border-zinc-600"
+          >
+            <div className="font-medium">Members</div>
+            <div className="mt-1 text-sm text-zinc-500">People in this company</div>
+          </Link>
+        )}
+        {membership.role === 'admin' && (
+          <Link
+            href={`/dashboard/c/${companyId}/settings`}
+            className="kms-card p-5 transition-colors hover:border-zinc-600"
+          >
+            <div className="font-medium">Settings</div>
+            <div className="mt-1 text-sm text-zinc-500">Integrations and company</div>
+          </Link>
+        )}
       </div>
     </div>
   );
