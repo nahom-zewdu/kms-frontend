@@ -1,6 +1,3 @@
-// app/login/page.tsx
-// Login page for the KMS application with client-side validation and friendly feedback.
-
 'use client';
 import { FormEvent, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -62,46 +59,61 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+    <div className="flex min-h-dvh items-center justify-center bg-[#0a0a0a] px-4 py-10">
       <form
         onSubmit={handleLogin}
-        className="w-full max-w-md p-10 bg-zinc-900 rounded-3xl"
+        className="kms-card w-full max-w-md p-6 sm:p-8"
         noValidate
       >
-        <h1 className="text-4xl font-semibold tracking-tighter mb-8">Sign in to KMS</h1>
+        <Link href="/" className="text-sm font-semibold tracking-tight text-white">
+          KMS
+        </Link>
+        <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">Sign in</h1>
+        <p className="mt-1.5 text-sm text-zinc-500">Continue to your workspace.</p>
 
+        <label className="kms-label mt-8" htmlFor="email">
+          Email
+        </label>
         <input
+          id="email"
           type="email"
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-6 py-4 mb-4"
+          placeholder="you@company.com"
+          className="kms-input"
         />
 
+        <label className="kms-label mt-4" htmlFor="password">
+          Password
+        </label>
         <input
+          id="password"
           type="password"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-6 py-4 mb-2"
+          className="kms-input"
         />
 
-        {validationHint && <p className="text-zinc-400 text-sm mb-4">{validationHint}</p>}
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-        {info && <p className="text-emerald-400 text-sm mb-4">{info}</p>}
+        {validationHint && <p className="mt-3 text-sm text-zinc-400">{validationHint}</p>}
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {info && <p className="mt-3 text-sm text-emerald-400">{info}</p>}
 
         <button
           type="submit"
           disabled={loading || !formValid}
-          className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 disabled:opacity-50"
+          className="kms-btn-primary mt-6 w-full"
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? 'Signing in...' : 'Sign in'}
         </button>
 
-        <p className="text-center text-sm text-zinc-500 mt-6">
-          No account? <Link href="/signup" className="text-white hover:underline">Sign up</Link>
+        <p className="mt-6 text-center text-sm text-zinc-500">
+          No account?{' '}
+          <Link href="/signup" className="text-white hover:underline">
+            Sign up
+          </Link>
         </p>
       </form>
     </div>

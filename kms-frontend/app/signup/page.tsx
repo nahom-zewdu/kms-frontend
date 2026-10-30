@@ -1,8 +1,6 @@
-// app/signup/page.tsx
-// Signup page for the KMS application with client-side validation and user-friendly messaging.
-
 'use client';
 import { FormEvent, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,48 +67,71 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-      <form onSubmit={handleSignup} className="w-full max-w-md p-10 bg-zinc-900 rounded-3xl" noValidate>
-        <h1 className="text-4xl font-semibold tracking-tighter mb-8">Create Account</h1>
+    <div className="flex min-h-dvh items-center justify-center bg-[#0a0a0a] px-4 py-10">
+      <form onSubmit={handleSignup} className="kms-card w-full max-w-md p-6 sm:p-8" noValidate>
+        <Link href="/" className="text-sm font-semibold tracking-tight text-white">
+          KMS
+        </Link>
+        <h1 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">Create account</h1>
+        <p className="mt-1.5 text-sm text-zinc-500">Start with your engineering workspace.</p>
 
+        <label className="kms-label mt-8" htmlFor="name">
+          Full name
+        </label>
         <input
+          id="name"
           type="text"
           autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Full Name"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-6 py-4 mb-4"
+          placeholder="Full name"
+          className="kms-input"
         />
 
+        <label className="kms-label mt-4" htmlFor="email">
+          Email
+        </label>
         <input
+          id="email"
           type="email"
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-6 py-4 mb-4"
+          placeholder="you@company.com"
+          className="kms-input"
         />
 
+        <label className="kms-label mt-4" htmlFor="password">
+          Password
+        </label>
         <input
+          id="password"
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-6 py-4 mb-2"
+          placeholder="At least 8 characters"
+          className="kms-input"
         />
 
-        {validationHint && <p className="text-zinc-400 text-sm mb-4">{validationHint}</p>}
-        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-        {message && <p className="text-emerald-400 text-sm mb-4">{message}</p>}
+        {validationHint && <p className="mt-3 text-sm text-zinc-400">{validationHint}</p>}
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {message && <p className="mt-3 text-sm text-emerald-400">{message}</p>}
 
         <button
           type="submit"
           disabled={loading || !formValid}
-          className="w-full bg-white text-black py-4 rounded-2xl font-medium hover:bg-zinc-200 disabled:opacity-50"
+          className="kms-btn-primary mt-6 w-full"
         >
-          {loading ? 'Creating account...' : 'Create Account'}
+          {loading ? 'Creating account...' : 'Create account'}
         </button>
+
+        <p className="mt-6 text-center text-sm text-zinc-500">
+          Already have an account?{' '}
+          <Link href="/login" className="text-white hover:underline">
+            Sign in
+          </Link>
+        </p>
       </form>
     </div>
   );
