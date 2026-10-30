@@ -5,9 +5,10 @@
 // The page fetches the ramp plan data from an external NLP service and displays it using the RampWorkspace component.
 
 import { getUserContext } from '@/lib/auth';
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { RampWorkspace } from '@/components/ramp/RampWorkspace';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 const NLP = process.env.NLP_API_URL || 'http://localhost:8000';
 
@@ -36,18 +37,32 @@ export default async function RampRolePage({
   const data = await res.json().catch(() => null);
   const plan = data?.plan || data;
 
-  if (!res.ok || !plan || (!plan.steps && !plan.title)) {
+  const backAction = (
+    <Link href={`/dashboard/c/${companyId}/ramp`} className="kms-btn-secondary">
+      Back to First 7 Days
+    </Link>
+  );
+
+  if (!res.ok) {
+    console.error('ramp plan request failed:', res.status);
     return (
       <div>
-        <h1 className="text-3xl font-semibold tracking-tighter">No ramp for {role}</h1>
-        <p className="text-zinc-500 mt-2">Generate one from the First 7 Days page.</p>
-        <Link
-          href={`/dashboard/c/${companyId}/ramp`}
-          className="inline-block mt-6 text-sm text-zinc-300 underline underline-offset-4"
-        >
-          Generate ramp
-        </Link>
+        <PageHeader
+          title="Could not load ramp"
+          description="The ramp service did not return this path. Try again or return to the ramp list."
+          actions={backAction}
+        />
       </div>
+    );
+  }
+
+  if (!plan || (!plan.steps && !plan.title)) {
+    return (
+      <PageHeader
+        title={`No ramp for ${role}`}
+        description="Generate one from the First 7 Days page."
+        actions={backAction}
+      />
     );
   }
 
@@ -56,7 +71,7 @@ export default async function RampRolePage({
       <div className="mb-6">
         <Link
           href={`/dashboard/c/${companyId}/ramp`}
-          className="text-xs text-zinc-600 hover:text-zinc-400"
+          className="inline-flex min-h-10 items-center text-xs text-zinc-500 hover:text-zinc-300"
         >
           ← All ramps
         </Link>
