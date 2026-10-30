@@ -1,8 +1,3 @@
-// app/dashboard/settings/UserList.tsx
-// This is the user list component.
-// It fetches the list of users from the /api/users endpoint and displays them.
-// It allows changing the role of a user by sending a POST request to the /api/users/role endpoint.
-
 'use client';
 import { useEffect, useState } from 'react';
 
@@ -45,31 +40,43 @@ export default function UserList() {
     fetchUsers();
   };
 
-  if (loading) return <div className="text-zinc-500">Loading team members...</div>;
+  if (loading) return <div className="text-sm text-zinc-500">Loading team members...</div>;
+
+  if (users.length === 0) {
+    return <div className="text-sm text-zinc-500">No team members yet.</div>;
+  }
 
   return (
-    <div className="space-y-4">
-      {users.map((u) => (
-        <div key={u.id} className="flex justify-between items-center bg-zinc-950 p-6 rounded-2xl">
-          <div>
-            <div className="font-medium">{u.name}</div>
-            <div className="text-sm text-zinc-500">{u.email}</div>
+    <div className="space-y-2">
+      {users.map((user) => (
+        <div
+          key={user.id}
+          className="flex flex-col gap-3 border border-zinc-800 bg-zinc-950 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="min-w-0">
+            <div className="truncate font-medium">{user.name}</div>
+            <div className="truncate text-sm text-zinc-500">{user.email}</div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <select 
-              value={u.role} 
-              onChange={(e) => changeRole(u.id, e.target.value)}
-              className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-sm"
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="sr-only" htmlFor={`role-${user.id}`}>
+              Role for {user.name}
+            </label>
+            <select
+              id={`role-${user.id}`}
+              value={user.role}
+              onChange={(e) => changeRole(user.id, e.target.value)}
+              className="kms-select py-2"
             >
               <option value="member">Member</option>
               <option value="manager">Manager</option>
               <option value="admin">Admin</option>
             </select>
 
-            <button 
-              onClick={() => removeUser(u.id)}
-              className="text-red-400 hover:text-red-500 text-sm"
+            <button
+              type="button"
+              onClick={() => removeUser(user.id)}
+              className="min-h-10 text-sm text-red-400 hover:text-red-300"
             >
               Remove
             </button>
