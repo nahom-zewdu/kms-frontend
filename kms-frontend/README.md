@@ -29,13 +29,13 @@ It implements:
 
 ## Getting started
 
-Create `.env.local` with the required Supabase keys:
+Copy the environment template and fill in the values for the services you use:
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+```bash
+cp .env.example .env.local
 ```
+
+See `.env.example` for the full list of frontend, integration, and backend service variables.
 
 Install dependencies:
 
