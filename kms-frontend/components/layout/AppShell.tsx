@@ -72,6 +72,12 @@ export function AppShell({
 
   return (
     <div className="flex min-h-dvh bg-[#0a0a0a] text-zinc-100">
+      <a
+        href="#app-main"
+        className="sr-only fixed left-3 top-3 z-[60] bg-white px-3 py-2 text-sm text-black focus:not-sr-only"
+      >
+        Skip to content
+      </a>
       {mobileOpen && (
         <button
           type="button"
@@ -101,9 +107,9 @@ export function AppShell({
           <button
             ref={menuButtonRef}
             type="button"
-            onClick={openMobile}
+            onClick={mobileOpen ? closeMobile : openMobile}
             className="inline-flex h-9 w-9 items-center justify-center text-zinc-400 hover:text-white"
-            aria-label="Open navigation"
+            aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={mobileOpen}
             aria-controls="app-navigation"
           >
@@ -116,7 +122,7 @@ export function AppShell({
             {mobileTitle}
           </Link>
         </header>
-        <main className="min-w-0 flex-1 overflow-x-hidden">
+        <main id="app-main" className="min-w-0 flex-1 overflow-x-hidden">
           <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
             {children}
           </div>

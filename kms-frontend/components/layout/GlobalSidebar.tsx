@@ -61,7 +61,7 @@ export function GlobalSidebar({
         </button>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-2 pb-4">
+      <nav aria-label="Global navigation" className="flex-1 space-y-6 overflow-y-auto px-2 pb-4">
         <div>
           <NavItem href="/dashboard" label="Overview" icon={Home} exact collapsed={collapsed} />
         </div>
@@ -81,6 +81,8 @@ export function GlobalSidebar({
                   key={company.id}
                   href={href}
                   title={collapsed ? company.name : undefined}
+                  aria-label={collapsed ? company.name : undefined}
+                  aria-current={active ? 'page' : undefined}
                   onClick={closeMobile}
                   className={[
                     'block truncate border-l-2 text-sm transition-colors',
@@ -104,6 +106,8 @@ export function GlobalSidebar({
             <Link
               href="/dashboard/companies/new"
               title={collapsed ? 'New company' : undefined}
+              aria-label={collapsed ? 'New company' : undefined}
+              aria-current={pathname === '/dashboard/companies/new' ? 'page' : undefined}
               onClick={closeMobile}
               className={[
                 'flex min-h-10 items-center gap-2 border-l-2 border-transparent text-sm text-zinc-500 hover:text-zinc-200',
@@ -135,6 +139,7 @@ export function GlobalSidebar({
           type="button"
           onClick={handleLogout}
           title="Sign out"
+          aria-label={collapsed ? 'Sign out' : undefined}
           className={[
             'flex min-h-10 w-full items-center gap-2 text-sm text-zinc-500 hover:text-zinc-200',
             collapsed ? 'justify-center' : '',

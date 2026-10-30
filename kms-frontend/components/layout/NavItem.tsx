@@ -28,6 +28,8 @@ export function NavItem({
     <Link
       href={href}
       title={collapsed ? label : undefined}
+      aria-label={collapsed ? label : undefined}
+      aria-current={active ? 'page' : undefined}
       onClick={closeMobile}
       className={[
         'flex min-h-10 items-center gap-3 py-2 text-sm border-l-2 transition-colors',

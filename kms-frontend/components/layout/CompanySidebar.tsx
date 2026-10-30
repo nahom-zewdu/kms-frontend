@@ -69,6 +69,7 @@ export function CompanySidebar({
           <Link
             href="/dashboard"
             title="All companies"
+            aria-label="All companies"
             onClick={closeMobile}
             className="flex justify-center text-zinc-500 hover:text-zinc-200"
           >
@@ -77,7 +78,7 @@ export function CompanySidebar({
         )}
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-4">
+      <nav aria-label="Company navigation" className="flex-1 space-y-0.5 overflow-y-auto px-2 py-4">
         <NavItem href={base} label="Overview" icon={Home} exact collapsed={collapsed} />
         <NavItem href={`${base}/ramp`} label="First 7 Days" icon={Route} collapsed={collapsed} />
         <NavItem href={`${base}/playbooks`} label="Playbooks" icon={BookOpen} collapsed={collapsed} />
