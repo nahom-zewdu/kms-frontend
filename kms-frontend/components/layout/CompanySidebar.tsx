@@ -7,7 +7,6 @@ import {
   BookOpen,
   Users,
   Settings,
-  BarChart3,
   PanelLeftClose,
   PanelLeft,
   Route,
@@ -85,7 +84,6 @@ export function CompanySidebar({
         {canManage && (
           <NavItem href={`${base}/members`} label="Members" icon={Users} collapsed={collapsed} />
         )}
-        <NavItem href={`${base}/analytics`} label="Knowledge Health" icon={BarChart3} collapsed={collapsed} />
         {role === 'admin' && (
           <NavItem href={`${base}/settings`} label="Settings" icon={Settings} collapsed={collapsed} />
         )}

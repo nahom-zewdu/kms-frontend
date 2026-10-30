@@ -1,5 +1,4 @@
 import { getUserContext } from '@/lib/auth';
-import Link from 'next/link';
 import { Check, Star } from 'lucide-react';
 import UpgradeButton from './UpgradeButton';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -72,13 +71,6 @@ export default async function SubscriptionPage() {
           )}
         </div>
       </div>
-
-      <p className="mt-8 text-sm text-zinc-500">
-        Need custom enterprise pricing?{' '}
-        <Link href="/contact" className="text-white hover:underline">
-          Contact sales
-        </Link>
-      </p>
     </div>
   );
 }
