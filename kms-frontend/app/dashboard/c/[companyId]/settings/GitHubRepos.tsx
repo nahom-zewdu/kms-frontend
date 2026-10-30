@@ -13,29 +13,58 @@ type Repo = {
 };
 
 export default function GitHubRepos({ companyId }: { companyId: string }) {
-  const [repos, setRepos] = useState<Repo[]>([]);
-  const [installationId, setInstallationId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [result, setResult] = useState<{
+    companyId: string;
+    repos: Repo[];
+    installationId: number | null;
+    error: string;
+  } | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    setError('');
-    fetch(`/api/integrations/github/repos?companyId=${companyId}`)
+    let active = true;
+    fetch(`/api/integrations/github/repos?companyId=${encodeURIComponent(companyId)}`)
       .then(async (r) => {
         const d = await r.json();
         if (!r.ok) {
-          setError(d.error || 'Failed to load repositories');
-          setRepos([]);
-          setInstallationId(null);
+          if (active) {
+            setResult({
+              companyId,
+              repos: [],
+              installationId: null,
+              error: d.error || 'Failed to load repositories',
+            });
+          }
           return;
         }
-        setRepos(d.repos || []);
-        setInstallationId(d.installation_id ?? null);
+        if (active) {
+          setResult({
+            companyId,
+            repos: d.repos || [],
+            installationId: d.installation_id ?? null,
+            error: '',
+          });
+        }
       })
-      .catch(() => setError('Failed to load repositories'))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (active) {
+          setResult({
+            companyId,
+            repos: [],
+            installationId: null,
+            error: 'Failed to load repositories',
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [companyId]);
+
+  const isLoading = result?.companyId !== companyId;
+  const repos = isLoading ? [] : result?.repos ?? [];
+  const installationId = isLoading ? null : result?.installationId ?? null;
+  const error = isLoading ? '' : result?.error ?? '';
 
   const openGitHubConfig = () => {
     if (installationId) {
@@ -57,13 +86,17 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
     }
   };
 
-  if (loading) {
-    return <div className="mt-8 text-zinc-500 text-sm">Loading repositories...</div>;
+  if (isLoading) {
+    return (
+      <p className="mt-8 text-sm text-zinc-500" role="status">
+        Loading repositories...
+      </p>
+    );
   }
 
   if (error) {
     return (
-      <div className="mt-8 text-sm text-red-400">
+      <div className="mt-8 text-sm text-red-400" role="alert">
         {error}
         <p className="text-zinc-500 mt-2">
           Reconnect GitHub from the button above if the app is not installed.
@@ -73,11 +106,11 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
   }
 
   return (
-    <div className="mt-8 space-y-3">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-medium">Installed repositories</h3>
-          <p className="text-sm text-zinc-500 mt-1">
+    <div className="mt-8 min-w-0 space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-base font-medium">Installed repositories</h3>
+          <p className="mt-1 text-sm leading-6 text-zinc-500">
             These repos were granted when the GitHub App was installed. Pushes, PRs, and
             issues are ingested automatically.
           </p>
@@ -85,35 +118,39 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
         <button
           type="button"
           onClick={openGitHubConfig}
-          className="shrink-0 text-sm px-4 py-2 rounded-xl font-medium bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition"
+          className="kms-btn-secondary min-h-10 whitespace-nowrap"
         >
           Configure on GitHub
         </button>
       </div>
 
       {repos.length === 0 ? (
-        <p className="text-zinc-500 text-sm">
+        <p className="text-sm text-zinc-500" role="status">
           No repositories on this installation. Use &quot;Configure on GitHub&quot; to add
           repos.
         </p>
       ) : (
-        repos.map((r) => (
-          <div
-            key={r.id || r.full_name}
-            className="flex justify-between items-center bg-zinc-950 rounded-2xl px-5 py-4"
-          >
-            <div>
-              <div className="font-medium text-sm">{r.full_name}</div>
-              {r.description && (
-                <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{r.description}</div>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-              {r.private && <span>Private</span>}
-              <span className="text-emerald-400/90">Active</span>
-            </div>
-          </div>
-        ))
+        <ul className="space-y-2">
+          {repos.map((repo) => (
+            <li
+              key={repo.id || repo.full_name}
+              className="flex min-w-0 flex-col gap-2 border border-zinc-800 bg-zinc-950 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <div className="break-all text-sm font-medium">{repo.full_name}</div>
+                {repo.description && (
+                  <div className="mt-1 line-clamp-2 break-words text-xs text-zinc-500">
+                    {repo.description}
+                  </div>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-3 text-xs text-zinc-500">
+                {repo.private && <span>Private</span>}
+                <span className="text-emerald-400/90">Active</span>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
