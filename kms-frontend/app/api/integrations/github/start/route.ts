@@ -6,6 +6,7 @@ import { getUserContext } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
+import { buildGitHubAppState, encodeGitHubAppState } from '@/lib/github-app-state';
 
 export async function GET(request: Request) {
   const user = await getUserContext();
