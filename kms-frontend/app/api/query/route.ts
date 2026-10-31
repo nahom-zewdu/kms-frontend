@@ -34,6 +34,9 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ answer: 'Unauthorized' }, { status: 401 });
   }
+  if (!user.accessToken) {
+    return NextResponse.json({ answer: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     const body = await request.json();
@@ -51,7 +54,10 @@ export async function POST(request: NextRequest) {
     const goUrl = process.env.GO_API_URL || 'http://localhost:9090';
     const response = await fetch(`${goUrl}/query`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.accessToken}`,
+      },
       body: JSON.stringify({
         question: question,
         company_id: companyId,
