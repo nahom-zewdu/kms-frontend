@@ -16,28 +16,14 @@ export async function POST(request: Request) {
   const supabase = await createServerSupabase();
   const companyId = `comp_${Date.now()}`;
 
-  // Create company
-  const { error: companyError } = await supabase
-    .from('companies')
-    .insert({ id: companyId, name: name.trim() });
+  const { data: createdCompanyId, error } = await supabase.rpc('create_company_with_owner', {
+    p_company_id: companyId,
+    p_name: name.trim(),
+  });
 
-  if (companyError) {
-    return NextResponse.json({ error: companyError.message }, { status: 500 });
+  if (error || !createdCompanyId) {
+    return NextResponse.json({ error: error?.message || 'Company creation failed' }, { status: 500 });
   }
 
-  // Add user as owner + admin
-  const { error: memberError } = await supabase
-    .from('company_members')
-    .insert({
-      user_id: user.id,
-      company_id: companyId,
-      role: 'admin',
-      is_owner: true,
-    });
-
-  if (memberError) {
-    return NextResponse.json({ error: memberError.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, company_id: companyId });
+  return NextResponse.json({ ok: true, company_id: createdCompanyId });
 }
