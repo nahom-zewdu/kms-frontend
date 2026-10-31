@@ -4,7 +4,6 @@
 
 import { getUserContext } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import { buildGitHubAppState, encodeGitHubAppState } from '@/lib/github-app-state';
 
@@ -20,18 +19,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const state = Buffer.from(
-    JSON.stringify({
-      companyId,
-      userId: user.id,
-      nonce: crypto.randomBytes(8).toString('hex'),
-    })
-  ).toString('base64url');
-
+  const state = encodeGitHubAppState(buildGitHubAppState(companyId, user.id));
   const cookieStore = await cookies();
   cookieStore.set('github_app_state', state, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 600,
   });
