@@ -34,8 +34,8 @@ export async function PATCH(
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.accessToken}`,
         'X-Company-Id': companyId,
-        'X-User-Id': user.id,
       },
       body: JSON.stringify({ status }),
     }
