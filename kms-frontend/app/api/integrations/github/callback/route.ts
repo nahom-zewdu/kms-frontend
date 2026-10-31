@@ -23,16 +23,9 @@ export async function GET(request: Request) {
 
   const cookieStore = await cookies();
   const storedState = cookieStore.get('github_app_state')?.value;
+  const usedStateHash = cookieStore.get('github_app_state_used')?.value;
 
-  console.log('[github/callback] cookie state present:', !!storedState);
-
-  const stateStr = storedState || stateRaw;
-  if (!installationId) {
-    console.error('[github/callback] missing installation_id');
-    return NextResponse.redirect(`${appUrl}/dashboard?error=github_missing_installation`);
-  }
-  if (!stateStr) {
-    console.error('[github/callback] missing state (cookie + query)');
+  if (!storedState || !stateRaw || storedState !== stateRaw) {
     return NextResponse.redirect(`${appUrl}/dashboard?error=github_missing_state`);
   }
 
