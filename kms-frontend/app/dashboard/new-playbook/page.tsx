@@ -7,7 +7,8 @@ export default async function NewPlaybookPage() {
   if (!user) return null;
 
   const canCreate = user.isManager;
-  const limitReached = user.activePlaybooks >= user.maxPlaybooks;
+  const limitReached =
+    user.maxPlaybooks !== null && user.activePlaybooks >= user.maxPlaybooks;
 
   if (!canCreate) {
     return (
