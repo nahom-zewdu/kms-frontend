@@ -15,7 +15,11 @@ export async function POST(request: Request) {
   const { userId } = await request.json();
 
   const supabase = await createServerSupabase();
-  await supabase.from('profiles').delete().eq('id', userId).eq('company_id', user.company_id);
+  await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', userId)
+    .eq('company_id', user.activeCompany.id);
 
   return NextResponse.json({ ok: true });
 }
