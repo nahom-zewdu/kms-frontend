@@ -17,6 +17,10 @@ export async function GET(request: Request) {
   const setupAction = searchParams.get('setup_action');
   const stateRaw = searchParams.get('state');
 
+  if (!installationId || !/^[0-9]+$/.test(installationId)) {
+    return NextResponse.redirect(`${appUrl}/dashboard?error=github_missing_installation`);
+  }
+
   const cookieStore = await cookies();
   const storedState = cookieStore.get('github_app_state')?.value;
 
