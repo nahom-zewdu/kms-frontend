@@ -45,7 +45,6 @@ async function ensureProfileIfMissing(userId: string, email: string) {
   const { error: upsertError } = await adminSupabase.from('profiles').upsert({
     id: userId,
     name: profileName,
-    company_id: 'default',
   });
 
   if (upsertError) {
