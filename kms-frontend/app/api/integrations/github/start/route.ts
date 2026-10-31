@@ -35,10 +35,19 @@ export async function GET(request: Request) {
     path: '/',
     maxAge: 600,
   });
+  cookieStore.set('github_app_state_used', '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 0,
+  });
 
-  const slug = process.env.GITHUB_APP_SLUG!;
-  // state is passed through; GitHub also supports redirect_uri on some flows
-  const url = `https://github.com/apps/${slug}/installations/new?state=${state}`;
+  const slug = process.env.GITHUB_APP_SLUG;
+  if (!slug) {
+    return NextResponse.json({ error: 'GitHub App is not configured' }, { status: 500 });
+  }
 
+  const url = `https://github.com/apps/${slug}/installations/new?state=${encodeURIComponent(state)}`;
   return NextResponse.redirect(url);
 }
