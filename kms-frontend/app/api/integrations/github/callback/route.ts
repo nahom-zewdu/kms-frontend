@@ -29,6 +29,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${appUrl}/dashboard?error=github_missing_state`);
   }
 
+  const replayHash = hashGitHubAppState(stateRaw);
+  if (usedStateHash && usedStateHash === replayHash) {
+    return NextResponse.redirect(`${appUrl}/dashboard?error=github_state_reused`);
+  }
+
   let state: { companyId: string; userId: string };
   try {
     state = JSON.parse(Buffer.from(stateStr, 'base64url').toString());
