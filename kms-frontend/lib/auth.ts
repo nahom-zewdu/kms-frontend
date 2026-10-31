@@ -45,12 +45,30 @@ export async function getUserContext() {
   const activeCompanyId = cookieStore.get('active_company_id')?.value || companies[0]?.id || null;
 
   const activeCompany = companies.find(c => c.id === activeCompanyId) || companies[0] || null;
+  const plan = profile?.plan || 'starter';
+  let activePlaybooks = 0;
+
+  if (activeCompany) {
+    const { count, error: playbooksError } = await supabase
+      .from('playbooks')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', activeCompany.id)
+      .eq('is_active', true);
+
+    if (playbooksError) {
+      throw new Error(`Failed to load active playbook count: ${playbooksError.message}`);
+    }
+
+    activePlaybooks = count ?? 0;
+  }
 
   return {
     id: user.id,
     email: user.email,
     name: profile?.name || user.email?.split('@')[0] || 'User',
-    plan: profile?.plan || 'starter',
+    plan,
+    activePlaybooks,
+    maxPlaybooks: plan === 'pro' ? null : 10,
     companies,
     activeCompany,
     accessToken: session?.access_token || null,
