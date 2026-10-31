@@ -7,8 +7,10 @@ import { cookies } from 'next/headers';
 
 export async function getUserContext() {
   const supabase = await createServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (!user || error) return null;
+
+  const { data: { session } } = await supabase.auth.getSession();
 
   // Get profile
   const { data: profile } = await supabase
@@ -51,6 +53,7 @@ export async function getUserContext() {
     plan: profile?.plan || 'starter',
     companies,
     activeCompany,
+    accessToken: session?.access_token || null,
     isAdmin: activeCompany?.role === 'admin',
     isManager: ['admin', 'manager'].includes(activeCompany?.role || ''),
   };
