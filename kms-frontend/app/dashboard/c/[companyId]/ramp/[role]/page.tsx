@@ -29,8 +29,8 @@ export default async function RampRolePage({
     {
       cache: 'no-store',
       headers: {
+        'Authorization': `Bearer ${user.accessToken}`,
         'X-Company-Id': companyId,
-        'X-User-Id': user.id,
       },
     }
   );
