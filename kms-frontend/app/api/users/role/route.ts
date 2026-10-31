@@ -7,15 +7,37 @@ import { createServerSupabase } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  const user = await requireRole('admin');
+  let user;
+  try {
+    user = await requireRole('admin');
+  } catch {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   const { userId, role } = await request.json();
+  if (!userId || !['admin', 'manager', 'member'].includes(role)) {
+    return NextResponse.json({ error: 'userId and a valid role are required' }, { status: 400 });
+  }
+  if (userId === user.id) {
+    return NextResponse.json({ error: 'You cannot change your own membership role' }, { status: 403 });
+  }
+  const companyId = user.activeCompany?.id;
+  if (!companyId) return NextResponse.json({ error: 'No active company found' }, { status: 403 });
 
   const supabase = await createServerSupabase();
-  await supabase
-    .from('profiles')
+  const { data, error } = await supabase
+    .from('company_members')
     .update({ role })
-    .eq('id', userId)
-    .eq('company_id', user.activeCompany.id);
+    .eq('user_id', userId)
+    .eq('company_id', companyId)
+    .select('id')
+    .maybeSingle();
+
+  if (error) {
+    return NextResponse.json({ error: 'Unable to update membership role' }, { status: 500 });
+  }
+  if (!data) {
+    return NextResponse.json({ error: 'Membership not found or role change forbidden' }, { status: 404 });
+  }
 
   return NextResponse.json({ ok: true });
 }
