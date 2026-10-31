@@ -7,7 +7,7 @@ import { requireRole } from '@/lib/permissions';
 export async function POST(request: NextRequest) {
   const { role, employeeName } = await request.json();
   const user = await requireRole('manager');
-  if (user.activePlaybooks >= user.maxPlaybooks) {
+  if (user.maxPlaybooks !== null && user.activePlaybooks >= user.maxPlaybooks) {
     return NextResponse.json({ error: 'Plan limit reached' }, { status: 429 });
   }
 
