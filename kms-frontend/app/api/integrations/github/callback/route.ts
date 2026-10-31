@@ -42,6 +42,24 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${appUrl}/dashboard?error=invalid_state`);
   }
 
+  const user = await getUserContext();
+  if (!user) {
+    return NextResponse.redirect(`${appUrl}/dashboard?error=github_unauthorized`);
+  }
+
+  if (user.id !== state.userId) {
+    return NextResponse.redirect(`${appUrl}/dashboard?error=github_unauthorized`);
+  }
+
+  const membership = user.companies.find(c => c.id === state.companyId);
+  if (!membership || membership.role !== 'admin') {
+    return NextResponse.redirect(`${appUrl}/dashboard/c/${state.companyId}?error=github_forbidden`);
+  }
+
+  if (setupAction && !['install', 'update', 'delete'].includes(setupAction)) {
+    return NextResponse.redirect(`${appUrl}/dashboard/c/${state.companyId}/settings?error=invalid_setup_action`);
+  }
+
   const installation = await getInstallation(Number(installationId));
   if (!installation) {
     console.error('[github/callback] getInstallation failed');
