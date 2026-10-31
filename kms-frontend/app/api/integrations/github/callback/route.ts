@@ -96,6 +96,13 @@ export async function GET(request: Request) {
   );
 
   cookieStore.delete('github_app_state');
+  cookieStore.set('github_app_state_used', replayHash, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 600,
+  });
 
   if (error) {
     console.error('[github/callback] DB error:', error);
