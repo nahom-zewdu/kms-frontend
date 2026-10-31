@@ -36,9 +36,8 @@ export async function GET(request: Request) {
 
   let state: { companyId: string; userId: string };
   try {
-    state = JSON.parse(Buffer.from(stateStr, 'base64url').toString());
-  } catch (e) {
-    console.error('[github/callback] bad state', e);
+    state = verifyGitHubAppState(stateRaw);
+  } catch {
     return NextResponse.redirect(`${appUrl}/dashboard?error=invalid_state`);
   }
 
@@ -62,7 +61,6 @@ export async function GET(request: Request) {
 
   const installation = await getInstallation(Number(installationId));
   if (!installation) {
-    console.error('[github/callback] getInstallation failed');
     return NextResponse.redirect(
       `${appUrl}/dashboard/c/${state.companyId}/settings?error=github_install_fetch`
     );
@@ -105,13 +103,10 @@ export async function GET(request: Request) {
   });
 
   if (error) {
-    console.error('[github/callback] DB error:', error);
     return NextResponse.redirect(
       `${appUrl}/dashboard/c/${state.companyId}/settings?error=db`
     );
   }
-
-  console.log('[github/callback] saved', state.companyId, installationId, accountLogin);
 
   return NextResponse.redirect(
     `${appUrl}/dashboard/c/${state.companyId}/settings?github=connected`
