@@ -56,7 +56,6 @@ async function createUser(email: string, password: string, name: string) {
   const { error: profileError } = await adminSupabase.from('profiles').upsert({
     id: data.user.id,
     name,
-    company_id: 'default',
   });
 
   if (profileError) {
