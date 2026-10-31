@@ -29,7 +29,11 @@ export async function POST(request: Request) {
 
   const res = await fetch(`${NLP}/ramp-plans/generate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${user.accessToken}`,
+      'X-Company-Id': companyId,
+    },
     body: JSON.stringify({
       company_id: companyId,
       role,
