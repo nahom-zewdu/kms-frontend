@@ -6,6 +6,8 @@ import { createAdminSupabase } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getInstallation } from '@/lib/github-app';
+import { getUserContext } from '@/lib/auth';
+import { hashGitHubAppState, verifyGitHubAppState } from '@/lib/github-app-state';
 
 export async function GET(request: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
