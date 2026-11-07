@@ -3,14 +3,24 @@
 // It provides a function to get the user context, which includes user information, profile details, and company memberships.
 
 import { createServerSupabase } from '@/lib/supabase-server';
+import { isAuthSessionMissingError } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 
-export async function getUserContext() {
+export const getUserContext = cache(async function getUserContext() {
   const supabase = await createServerSupabase();
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (!user || error) return null;
+  if (error) {
+    if (isAuthSessionMissingError(error)) return null;
+    throw error;
+  }
+  if (!user) return null;
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  if (!session || session.user.id !== user.id || !session.access_token) {
+    throw new Error('Supabase verified a user but did not return a matching access-token session.');
+  }
 
   // Get profile
   const { data: profile } = await supabase
@@ -33,12 +43,22 @@ export async function getUserContext() {
     `)
     .eq('user_id', user.id);
 
-  const companies = (memberships || []).map((m: any) => ({
-    id: m.company.id,
-    name: m.company.name,
-    role: m.role,
-    is_owner: m.is_owner,
-  }));
+  const companies = (memberships || []).flatMap((membership: {
+    role: string;
+    is_owner: boolean;
+    company: { id: string; name: string } | { id: string; name: string }[] | null;
+  }) => {
+    const company = Array.isArray(membership.company)
+      ? membership.company[0]
+      : membership.company;
+    if (!company) return [];
+    return [{
+      id: company.id,
+      name: company.name,
+      role: membership.role,
+      is_owner: membership.is_owner,
+    }];
+  });
 
   // Active company from cookie
   const cookieStore = await cookies();
@@ -71,8 +91,8 @@ export async function getUserContext() {
     maxPlaybooks: plan === 'pro' ? null : 10,
     companies,
     activeCompany,
-    accessToken: session?.access_token || null,
+    accessToken: session.access_token,
     isAdmin: activeCompany?.role === 'admin',
     isManager: ['admin', 'manager'].includes(activeCompany?.role || ''),
   };
-}
+});
