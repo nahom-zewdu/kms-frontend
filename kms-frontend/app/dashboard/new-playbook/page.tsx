@@ -19,5 +19,5 @@ export default async function NewPlaybookPage() {
     );
   }
 
-  return <NewPlaybookForm limitReached={limitReached} user={user} />;
+  return <NewPlaybookForm limitReached={limitReached} user={{ plan: user.plan }} />;
 }
