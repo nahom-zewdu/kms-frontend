@@ -83,16 +83,6 @@ export async function POST(request: Request) {
     return jsonResponse({ ok: false, error: 'Login failed. Please check your credentials and try again.' }, 400);
   }
 
-  const { error: setErr } = await supabase.auth.setSession({
-    access_token: data.session.access_token,
-    refresh_token: data.session.refresh_token,
-  });
-
-  if (setErr) {
-    logAuthError('set-session', setErr);
-    return jsonResponse({ ok: false, error: 'Unable to establish a session. Please try again.' }, 500);
-  }
-
   await ensureProfileIfMissing(data.user.id, email);
 
   return jsonResponse({ ok: true, redirect: '/dashboard' });
