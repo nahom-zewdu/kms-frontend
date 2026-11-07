@@ -1,16 +1,13 @@
-// app/dashboard/c/[companyId]/ramp/[role]/page.tsx
 // This page displays the ramp plan for a specific role within a company in the KMS application.
 // It fetches the user context and checks if the user has access to the specified company.
-// If the user is not logged in or does not have access, they are redirected to the login page or dashboard, respectively.
-// The page fetches the ramp plan data from an external NLP service and displays it using the RampWorkspace component.
+// If the user is not logged in or does not have access, it redirects to the appropriate page.
 
 import { getUserContext } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { RampWorkspace } from '@/components/ramp/RampWorkspace';
 import { PageHeader } from '@/components/ui/PageHeader';
-
-const NLP = process.env.NLP_API_URL || 'http://localhost:8000';
+import { fetchRampApi } from '@/lib/ramp-api';
 
 export default async function RampRolePage({
   params,
@@ -24,16 +21,11 @@ export default async function RampRolePage({
   if (!user) redirect('/login');
   if (!user.companies.some((c) => c.id === companyId)) redirect('/dashboard');
 
-  const res = await fetch(
-    `${NLP}/ramp-plans?company_id=${encodeURIComponent(companyId)}&role=${encodeURIComponent(role)}`,
-    {
-      cache: 'no-store',
-      headers: {
-        'Authorization': `Bearer ${user.accessToken}`,
-        'X-Company-Id': companyId,
-      },
-    }
-  );
+  const query = new URLSearchParams({ company_id: companyId, role });
+  const res = await fetchRampApi(`?${query}`, {
+    accessToken: user.accessToken,
+    companyId,
+  });
   const data = await res.json().catch(() => null);
   const plan = data?.plan || data;
 
@@ -44,14 +36,16 @@ export default async function RampRolePage({
   );
 
   if (!res.ok) {
-    console.error('ramp plan request failed:', res.status);
+    console.error('[ramp] plan request failed', { status: res.status });
+    const description =
+      res.status === 401
+        ? 'The Ramp service rejected the Supabase access token (401). Refresh the page and sign in again.'
+        : res.status === 403
+          ? 'The Ramp service denied access to this company (403). Verify your company membership.'
+          : 'The ramp service did not return this path. Try again or return to the ramp list.';
     return (
       <div>
-        <PageHeader
-          title="Could not load ramp"
-          description="The ramp service did not return this path. Try again or return to the ramp list."
-          actions={backAction}
-        />
+        <PageHeader title="Could not load ramp" description={description} actions={backAction} />
       </div>
     );
   }
