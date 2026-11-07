@@ -1,7 +1,6 @@
 import { getUserContext } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-
-const NLP = process.env.NLP_API_URL || 'http://localhost:8000';
+import { fetchRampApi } from '@/lib/ramp-api';
 
 export async function PATCH(
   request: Request,
@@ -27,17 +26,23 @@ export async function PATCH(
       { status: 400 }
     );
   }
+  if (!user.accessToken) {
+    return NextResponse.json(
+      { error: 'A valid Supabase access token is required.' },
+      { status: 401 }
+    );
+  }
 
-  const res = await fetch(
-    `${NLP}/ramp-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/progress`,
+  const res = await fetchRampApi(
+    `/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/progress`,
     {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.accessToken}`,
-        'X-Company-Id': companyId,
+      accessToken: user.accessToken,
+      companyId,
+      request: {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
       },
-      body: JSON.stringify({ status }),
     }
   );
 
