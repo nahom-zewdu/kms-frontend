@@ -1,12 +1,8 @@
-// app/api/ramp-plans/generate/route.ts
-// This API route handles requests for generating ramp plans in the KMS application.
-// It checks if the user is authenticated and authorized to generate ramp plans for the specified company based on their role.
-// The route sends a POST request to an external NLP service to generate the ramp plan and returns the response as JSON.
+// This API route forwards an authorized company ramp-generation request to the NLP service.
 
 import { getUserContext } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-
-const NLP = process.env.NLP_API_URL || 'http://localhost:8000';
+import { fetchRampApi } from '@/lib/ramp-api';
 
 export async function POST(request: Request) {
   const user = await getUserContext();
@@ -26,19 +22,25 @@ export async function POST(request: Request) {
   if (membership.role === 'member') {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
   }
+  if (!user.accessToken) {
+    return NextResponse.json(
+      { error: 'A valid Supabase access token is required.' },
+      { status: 401 }
+    );
+  }
 
-  const res = await fetch(`${NLP}/ramp-plans/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${user.accessToken}`,
-      'X-Company-Id': companyId,
+  const res = await fetchRampApi('/generate', {
+    accessToken: user.accessToken,
+    companyId,
+    request: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_id: companyId,
+        role,
+        employee_name: employeeName,
+      }),
     },
-    body: JSON.stringify({
-      company_id: companyId,
-      role,
-      employee_name: employeeName,
-    }),
   });
   const data = await res.json().catch(() => ({}));
   return NextResponse.json(data, { status: res.status });
