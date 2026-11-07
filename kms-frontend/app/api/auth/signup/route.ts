@@ -112,15 +112,5 @@ export async function POST(request: Request) {
     return jsonResponse({ ok: false, error: 'Signup completed but we could not create your session. Please sign in.' }, 500);
   }
 
-  const { error: setErr } = await supabase.auth.setSession({
-    access_token: data.session.access_token,
-    refresh_token: data.session.refresh_token,
-  });
-
-  if (setErr) {
-    logAuthError('set-session', setErr);
-    return jsonResponse({ ok: false, error: 'Unable to establish a session. Please sign in manually.' }, 500);
-  }
-
   return jsonResponse({ ok: true, redirect: '/dashboard' });
 }
