@@ -18,18 +18,16 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          // Make refreshed cookies available to downstream server components.
           cookiesToSet.forEach(({ name, value }) => {
             request.cookies.set(name, value);
           });
 
           response = NextResponse.next({ request });
 
-          // Persist refreshed cookies in the browser.
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
-        },
+        }
       },
     }
   );
