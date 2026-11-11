@@ -593,6 +593,9 @@ export function StepWorkspace({
                     {e.label && (
                       <p className="mt-1 text-sm text-zinc-200">{e.label}</p>
                     )}
+                    {e.source === 'github_issue' && e.detail && (
+                      <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{e.detail}</p>
+                    )}
                     {sourcePath ? (
                       href ? (
                         <a href={href} target="_blank" rel="noreferrer" className="mt-1 block break-all text-xs font-mono text-zinc-300 underline underline-offset-4 hover:text-white">
