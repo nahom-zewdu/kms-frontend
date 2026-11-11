@@ -18,6 +18,9 @@ type Evidence = {
   related_file_path?: string;
   repository_full_name?: string;
   repository_default_branch?: string;
+  issue_url?: string;
+  issue_number?: number | string;
+  acceptance_checks?: string[];
 };
 
 type ImplementationBoundary = {
@@ -595,6 +598,21 @@ export function StepWorkspace({
                       )
                     ) : (
                       <p className="mt-1 text-xs text-zinc-600">No source file path attached.</p>
+                    )}
+                    {e.issue_url && (
+                      <a href={e.issue_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs text-zinc-300 underline underline-offset-4 hover:text-white">
+                        Open GitHub issue #{e.issue_number}
+                      </a>
+                    )}
+                    {!!e.acceptance_checks?.length && (
+                      <div className="mt-3 border-t border-zinc-800 pt-2">
+                        <p className="mb-1 text-[10px] uppercase tracking-wide text-zinc-600">Issue acceptance checks</p>
+                        <ul className="space-y-1 text-xs text-zinc-400">
+                          {e.acceptance_checks.map((check, checkIndex) => (
+                            <li key={checkIndex} className="break-words">• {check.replace(/^[-*+]\\s+\\[[ xX]\\]\\s*/, '').replace(/^\\d+[.)]\\s*/, '')}</li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
                     {e.related_file_path && (
                       <p className="mt-1 text-xs font-mono">
