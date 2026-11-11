@@ -66,6 +66,18 @@ export async function POST(request: Request) {
       if (insertError) throw insertError;
     }
 
+    const { error: statusError } = await supabase
+      .from('repositories')
+      .update({
+        baseline_status: 'indexing',
+        baseline_started_at: new Date().toISOString(),
+        baseline_error: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('company_id', companyId)
+      .eq('full_name', repoFullName);
+    if (statusError) throw statusError;
+
     const goUrl = process.env.GO_API_URL || 'http://localhost:9090';
     const query = new URLSearchParams({ repo: repoFullName, company_id: companyId });
     const response = await fetch(`${goUrl.replace(/\/+$/, '')}/github/sync-baseline?${query}`, {
@@ -74,6 +86,18 @@ export async function POST(request: Request) {
       cache: 'no-store',
     });
     const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      await supabase
+        .from('repositories')
+        .update({
+          baseline_status: 'failed',
+          baseline_error: 'Could not queue baseline indexing. Try again.',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('company_id', companyId)
+        .eq('full_name', repoFullName);
+    }
 
     return NextResponse.json(payload, { status: response.status });
   } catch (error) {
