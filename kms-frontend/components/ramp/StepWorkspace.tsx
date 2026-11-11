@@ -15,6 +15,8 @@ type Evidence = {
   module_path?: string;
   file_path?: string;
   record_id?: string;
+  related_file_path?: string;
+  repository_full_name?: string;
 };
 
 type ImplementationBoundary = {
@@ -563,7 +565,11 @@ export function StepWorkspace({
             <ul className="space-y-2">
               {(step.evidence || []).map((e, i) => {
                 const sourcePath = e.file_path || e.module_path;
-                const href = sourcePath ? githubBlobUrl(repo, sourcePath) : null;
+                const evidenceRepo = e.repository_full_name || repo;
+                const href = sourcePath ? githubBlobUrl(evidenceRepo, sourcePath) : null;
+                const relatedHref = e.related_file_path
+                  ? githubBlobUrl(evidenceRepo, e.related_file_path)
+                  : null;
                 return (
                   <li key={e.record_id || `${e.source || 'evidence'}-${i}`} className="border border-zinc-800 bg-zinc-950/40 px-3 py-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -586,6 +592,18 @@ export function StepWorkspace({
                       )
                     ) : (
                       <p className="mt-1 text-xs text-zinc-600">No source file path attached.</p>
+                    )}
+                    {e.related_file_path && (
+                      <p className="mt-1 text-xs font-mono">
+                        <span className="text-zinc-600">Related: </span>
+                        {relatedHref ? (
+                          <a href={relatedHref} target="_blank" rel="noreferrer" className="break-all text-zinc-400 underline underline-offset-4 hover:text-white">
+                            {e.related_file_path}
+                          </a>
+                        ) : (
+                          <span className="break-all text-zinc-500">{e.related_file_path}</span>
+                        )}
+                      </p>
                     )}
                   </li>
                 );
