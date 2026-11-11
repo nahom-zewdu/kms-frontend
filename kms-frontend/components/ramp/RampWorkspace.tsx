@@ -243,7 +243,10 @@ export function RampWorkspace({
           context: buildRampContext(plan),
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.answer || data.error || `Knowledge request failed (${res.status}).`);
+      }
       setMessages((m) => [
         ...m,
         {
@@ -253,12 +256,12 @@ export function RampWorkspace({
           owners: data.owners || [],
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((m) => [
         ...m,
         {
           role: 'assistant',
-          content: 'Could not reach the knowledge service. Try again.',
+          content: error instanceof Error ? error.message : 'Could not reach the knowledge service. Try again.',
         },
       ]);
     } finally {
