@@ -80,11 +80,25 @@ export async function POST(request: Request) {
 
     const goUrl = process.env.GO_API_URL || 'http://localhost:9090';
     const query = new URLSearchParams({ repo: repoFullName, company_id: companyId });
-    const response = await fetch(`${goUrl.replace(/\/+$/, '')}/github/sync-baseline?${query}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${user.accessToken}` },
-      cache: 'no-store',
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${goUrl.replace(/\/+$/, '')}/github/sync-baseline?${query}`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+        cache: 'no-store',
+      });
+    } catch (error) {
+      await supabase
+        .from('repositories')
+        .update({
+          baseline_status: 'failed',
+          baseline_error: 'Could not reach the indexing service. Try again.',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('company_id', companyId)
+        .eq('full_name', repoFullName);
+      throw error;
+    }
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
