@@ -63,6 +63,7 @@ type Step = {
     type?: string;
     path?: string;
     repo?: string | null;
+    default_branch?: string | null;
     files?: FileRef[];
   };
   evidence?: Evidence[];
@@ -142,9 +143,9 @@ function formatSource(s: SourceRef): string {
   return id ? `${src}:${id}` : src;
 }
 
-function githubBlobUrl(repo: string | null | undefined, path: string | null | undefined) {
+function githubBlobUrl(repo: string | null | undefined, path: string | null | undefined, branch = 'HEAD') {
   if (!repo || !path) return null;
-  return `https://github.com/${repo}/blob/HEAD/${path.split('/').map(encodeURIComponent).join('/')}`;
+  return `https://github.com/${repo}/blob/${encodeURIComponent(branch)}/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
@@ -413,13 +414,13 @@ export function RampWorkspace({
                           )}
                           {s.implementation_boundary.handler && <p>{s.implementation_boundary.handler}</p>}
                           {s.implementation_boundary.handler_file && (
-                            <a href={githubBlobUrl(s.target?.repo, s.implementation_boundary.handler_file) || undefined} target="_blank" rel="noreferrer" className="block break-all text-zinc-500 underline underline-offset-4 hover:text-zinc-300">
+                            <a href={githubBlobUrl(s.target?.repo, s.implementation_boundary.handler_file, s.target?.default_branch || 'HEAD') || undefined} target="_blank" rel="noreferrer" className="block break-all text-zinc-500 underline underline-offset-4 hover:text-zinc-300">
                               {s.implementation_boundary.handler_file}
                             </a>
                           )}
                           {s.implementation_boundary.operation && <p className="text-zinc-500">→ {s.implementation_boundary.operation}</p>}
                           {s.implementation_boundary.call_file && (
-                            <a href={githubBlobUrl(s.target?.repo, s.implementation_boundary.call_file) || undefined} target="_blank" rel="noreferrer" className="block break-all text-zinc-500 underline underline-offset-4 hover:text-zinc-300">
+                            <a href={githubBlobUrl(s.target?.repo, s.implementation_boundary.call_file, s.target?.default_branch || 'HEAD') || undefined} target="_blank" rel="noreferrer" className="block break-all text-zinc-500 underline underline-offset-4 hover:text-zinc-300">
                               {s.implementation_boundary.call_file}
                             </a>
                           )}
