@@ -20,7 +20,9 @@ type ImplementationBoundary = {
   method?: string | null;
   path?: string | null;
   handler?: string | null;
+  handler_file?: string | null;
   operation?: string | null;
+  call_file?: string | null;
   next_inspection_target?: string | null;
 };
 
