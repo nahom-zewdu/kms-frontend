@@ -13,6 +13,15 @@ type Repo = {
 };
 
 type SyncState = { kind: 'queued' | 'error'; message: string };
+type Baseline = {
+  full_name: string;
+  baseline_status: 'pending' | 'indexing' | 'ready' | 'failed';
+  baseline_started_at?: string | null;
+  baseline_completed_at?: string | null;
+  baseline_error?: string | null;
+  baseline_file_count?: number | null;
+  baseline_revision?: string | null;
+};
 
 export default function GitHubRepos({ companyId }: { companyId: string }) {
   const [result, setResult] = useState<{
@@ -23,6 +32,7 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
   } | null>(null);
   const [syncingRepo, setSyncingRepo] = useState<string | null>(null);
   const [syncStates, setSyncStates] = useState<Record<string, SyncState>>({});
+  const [baselines, setBaselines] = useState<Record<string, Baseline>>({});
 
   useEffect(() => {
     let active = true;
@@ -62,6 +72,36 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
 
     return () => {
       active = false;
+    };
+  }, [companyId]);
+
+  useEffect(() => {
+    let active = true;
+
+    const refreshStatuses = async () => {
+      try {
+        const response = await fetch(
+          `/api/integrations/github/baselines?companyId=${encodeURIComponent(companyId)}`,
+          { cache: 'no-store' }
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!active || !Array.isArray(data.repositories)) return;
+        const next: Record<string, Baseline> = {};
+        for (const repository of data.repositories as Baseline[]) {
+          next[repository.full_name] = repository;
+        }
+        setBaselines(next);
+      } catch {
+        // Keep the last known state visible during transient polling failures.
+      }
+    };
+
+    void refreshStatuses();
+    const interval = window.setInterval(() => void refreshStatuses(), 5000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
     };
   }, [companyId]);
 
@@ -111,6 +151,14 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
         [repo.full_name]: {
           kind: 'queued',
           message: data.message || 'Baseline indexing has been queued.',
+        },
+      }));
+      setBaselines((current) => ({
+        ...current,
+        [repo.full_name]: {
+          ...(current[repo.full_name] || { full_name: repo.full_name }),
+          full_name: repo.full_name,
+          baseline_status: 'indexing',
         },
       }));
     } catch (error) {
@@ -173,7 +221,15 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
         <ul className="space-y-2">
           {repos.map((repo) => {
             const syncState = syncStates[repo.full_name];
+            const baseline = baselines[repo.full_name];
             const isSyncing = syncingRepo === repo.full_name;
+            const baselineLabel = baseline?.baseline_status === 'ready'
+              ? `Indexed${typeof baseline.baseline_file_count === 'number' ? ` · ${baseline.baseline_file_count.toLocaleString()} files` : ''}`
+              : baseline?.baseline_status === 'indexing'
+                ? 'Indexing codebase…'
+                : baseline?.baseline_status === 'failed'
+                  ? 'Indexing failed'
+                  : 'Not indexed';
             return (
               <li
                 key={repo.id || repo.full_name}
@@ -186,6 +242,15 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
                       {repo.description}
                     </div>
                   )}
+                  {baseline?.baseline_status === 'failed' && baseline.baseline_error && (
+                    <p className="mt-1 text-xs text-red-400" role="alert">{baseline.baseline_error}</p>
+                  )}
+                  {baseline?.baseline_status === 'ready' && baseline.baseline_completed_at && (
+                    <p className="mt-1 text-xs text-zinc-600">
+                      Last indexed {new Date(baseline.baseline_completed_at).toLocaleString()}
+                      {baseline.baseline_revision ? ` · ${baseline.baseline_revision.slice(0, 7)}` : ''}
+                    </p>
+                  )}
                   {syncState && (
                     <p
                       className={`mt-2 text-xs ${syncState.kind === 'error' ? 'text-red-400' : 'text-emerald-400'}`}
@@ -196,6 +261,12 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
+                  <span
+                    className={`text-xs ${baseline?.baseline_status === 'ready' ? 'text-emerald-400' : baseline?.baseline_status === 'failed' ? 'text-red-400' : baseline?.baseline_status === 'indexing' ? 'text-amber-300' : 'text-zinc-500'}`}
+                    role="status"
+                  >
+                    {baselineLabel}
+                  </span>
                   {repo.private && <span className="text-xs text-zinc-500">Private</span>}
                   <button
                     type="button"
