@@ -17,6 +17,7 @@ type Evidence = {
   record_id?: string;
   related_file_path?: string;
   repository_full_name?: string;
+  repository_default_branch?: string;
 };
 
 type ImplementationBoundary = {
@@ -67,6 +68,7 @@ type Step = {
     type?: string;
     path?: string;
     repo?: string | null;
+    default_branch?: string | null;
     files?: FileRef[];
   };
   summary?: { what?: string | null; how?: string | null; where?: string | null };
@@ -142,9 +144,9 @@ function githubTreeUrl(repo: string | null | undefined, path: string) {
   return `https://github.com/${repo}/tree/HEAD/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
-function githubBlobUrl(repo: string | null | undefined, path: string) {
+function githubBlobUrl(repo: string | null | undefined, path: string, branch = 'HEAD') {
   if (!repo || !path) return null;
-  return `https://github.com/${repo}/blob/HEAD/${path.split('/').map(encodeURIComponent).join('/')}`;
+  return `https://github.com/${repo}/blob/${encodeURIComponent(branch)}/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
@@ -566,9 +568,10 @@ export function StepWorkspace({
               {(step.evidence || []).map((e, i) => {
                 const sourcePath = e.file_path || e.module_path;
                 const evidenceRepo = e.repository_full_name || repo;
-                const href = sourcePath ? githubBlobUrl(evidenceRepo, sourcePath) : null;
+                const evidenceBranch = e.repository_default_branch || step.target?.default_branch || 'HEAD';
+                const href = sourcePath ? githubBlobUrl(evidenceRepo, sourcePath, evidenceBranch) : null;
                 const relatedHref = e.related_file_path
-                  ? githubBlobUrl(evidenceRepo, e.related_file_path)
+                  ? githubBlobUrl(evidenceRepo, e.related_file_path, evidenceBranch)
                   : null;
                 return (
                   <li key={e.record_id || `${e.source || 'evidence'}-${i}`} className="border border-zinc-800 bg-zinc-950/40 px-3 py-2">
