@@ -38,6 +38,13 @@ export default async function RampIndexPage({
   }
 
   const canGenerate = membership.role === 'admin' || membership.role === 'manager';
+  const { data: repositories, error: repositoryError } = await supabase
+    .from('repositories')
+    .select('id, full_name, baseline_status')
+    .eq('company_id', companyId);
+  const readyRepositories = (repositories ?? []).filter(
+    (repository) => repository.baseline_status === 'ready'
+  );
 
   return (
     <div className="min-w-0 max-w-5xl">
@@ -90,7 +97,29 @@ export default async function RampIndexPage({
         )}
       </section>
 
-      {canGenerate && <GenerateRampForm companyId={companyId} />}
+      {canGenerate && (
+        repositoryError ? (
+          <div className="kms-card border border-amber-900/60 p-4 text-sm text-amber-200" role="status">
+            Repository readiness could not be checked. An admin should verify GitHub indexing in company settings before generating a new ramp.
+          </div>
+        ) : readyRepositories.length > 0 ? (
+          <GenerateRampForm companyId={companyId} />
+        ) : (
+          <div className="kms-card space-y-2 p-4 sm:p-5">
+            <h2 className="text-sm font-medium text-zinc-200">Repository baseline required</h2>
+            <p className="text-sm leading-6 text-zinc-500">
+              Ramp plans are generated from indexed repository evidence. Connect GitHub and finish indexing at least one repository before generating a plan.
+            </p>
+            {membership.role === 'admin' ? (
+              <Link href={`/dashboard/c/${companyId}/settings`} className="kms-btn-secondary inline-flex mt-2">
+                Configure GitHub indexing
+              </Link>
+            ) : (
+              <p className="text-xs text-zinc-600">Ask a company admin to connect GitHub and index a repository.</p>
+            )}
+          </div>
+        )
+      )}
     </div>
   );
 }
