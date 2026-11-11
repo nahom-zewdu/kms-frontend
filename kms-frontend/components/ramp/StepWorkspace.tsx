@@ -14,6 +14,8 @@ type Evidence = {
   source?: string;
   label?: string;
   detail?: string;
+  live_status?: 'verified' | 'unverified';
+  live_verified_at?: string;
   module_path?: string;
   file_path?: string;
   record_id?: string;
@@ -593,8 +595,10 @@ export function StepWorkspace({
                     {e.label && (
                       <p className="mt-1 text-sm text-zinc-200">{e.label}</p>
                     )}
-                    {e.source === 'github_issue' && e.detail && (
-                      <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{e.detail}</p>
+                    {e.source === 'github_issue' && (
+                      <p className={`mt-1 text-[11px] leading-relaxed ${e.live_status === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {e.live_status === 'verified' ? 'Live-checked with GitHub' : 'Not live-verified — confirm status and assignment before starting'}
+                      </p>
                     )}
                     {sourcePath ? (
                       href ? (
