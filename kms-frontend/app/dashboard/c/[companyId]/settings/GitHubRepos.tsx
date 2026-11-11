@@ -1,6 +1,6 @@
 // app/dashboard/c/[companyId]/settings/GitHubRepos.tsx
-// Lists repos covered by the GitHub App installation for this company.
-// Repo selection is managed on GitHub (all vs selected repos), not via per-repo webhooks.
+// Lists repositories covered by the GitHub App installation and lets admins queue
+// the initial codebase baseline required by Ramp.
 
 'use client';
 import { useEffect, useState } from 'react';
@@ -12,6 +12,8 @@ type Repo = {
   description?: string | null;
 };
 
+type SyncState = { kind: 'queued' | 'error'; message: string };
+
 export default function GitHubRepos({ companyId }: { companyId: string }) {
   const [result, setResult] = useState<{
     companyId: string;
@@ -19,6 +21,8 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
     installationId: number | null;
     error: string;
   } | null>(null);
+  const [syncingRepo, setSyncingRepo] = useState<string | null>(null);
+  const [syncStates, setSyncStates] = useState<Record<string, SyncState>>({});
 
   useEffect(() => {
     let active = true;
@@ -75,7 +79,6 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
       );
       return;
     }
-    // Fallback: app install/update page
     const slug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG;
     if (slug) {
       window.open(
@@ -85,6 +88,43 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
       );
     }
   };
+
+  async function queueIndex(repo: Repo) {
+    setSyncingRepo(repo.full_name);
+    setSyncStates((current) => {
+      const next = { ...current };
+      delete next[repo.full_name];
+      return next;
+    });
+
+    try {
+      const response = await fetch('/api/integrations/github/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, repo: repo.full_name }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not queue repository indexing.');
+
+      setSyncStates((current) => ({
+        ...current,
+        [repo.full_name]: {
+          kind: 'queued',
+          message: data.message || 'Baseline indexing has been queued.',
+        },
+      }));
+    } catch (error) {
+      setSyncStates((current) => ({
+        ...current,
+        [repo.full_name]: {
+          kind: 'error',
+          message: error instanceof Error ? error.message : 'Could not queue repository indexing.',
+        },
+      }));
+    } finally {
+      setSyncingRepo(null);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -111,8 +151,8 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
         <div className="min-w-0">
           <h3 className="text-base font-medium">Installed repositories</h3>
           <p className="mt-1 text-sm leading-6 text-zinc-500">
-            These repos were granted when the GitHub App was installed. Pushes, PRs, and
-            issues are ingested automatically.
+            Choose a repository to index its codebase for Ramp. Pushes, PRs, and issues
+            continue to be ingested automatically.
           </p>
         </div>
         <button
@@ -131,25 +171,44 @@ export default function GitHubRepos({ companyId }: { companyId: string }) {
         </p>
       ) : (
         <ul className="space-y-2">
-          {repos.map((repo) => (
-            <li
-              key={repo.id || repo.full_name}
-              className="flex min-w-0 flex-col gap-2 border border-zinc-800 bg-zinc-950 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0">
-                <div className="break-all text-sm font-medium">{repo.full_name}</div>
-                {repo.description && (
-                  <div className="mt-1 line-clamp-2 break-words text-xs text-zinc-500">
-                    {repo.description}
-                  </div>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-3 text-xs text-zinc-500">
-                {repo.private && <span>Private</span>}
-                <span className="text-emerald-400/90">Active</span>
-              </div>
-            </li>
-          ))}
+          {repos.map((repo) => {
+            const syncState = syncStates[repo.full_name];
+            const isSyncing = syncingRepo === repo.full_name;
+            return (
+              <li
+                key={repo.id || repo.full_name}
+                className="flex min-w-0 flex-col gap-3 border border-zinc-800 bg-zinc-950 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="break-all text-sm font-medium">{repo.full_name}</div>
+                  {repo.description && (
+                    <div className="mt-1 line-clamp-2 break-words text-xs text-zinc-500">
+                      {repo.description}
+                    </div>
+                  )}
+                  {syncState && (
+                    <p
+                      className={`mt-2 text-xs ${syncState.kind === 'error' ? 'text-red-400' : 'text-emerald-400'}`}
+                      role={syncState.kind === 'error' ? 'alert' : 'status'}
+                    >
+                      {syncState.message}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  {repo.private && <span className="text-xs text-zinc-500">Private</span>}
+                  <button
+                    type="button"
+                    onClick={() => void queueIndex(repo)}
+                    disabled={isSyncing || syncingRepo !== null}
+                    className="kms-btn-secondary min-h-10 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSyncing ? 'Queueing…' : syncState?.kind === 'queued' ? 'Queue re-index' : 'Index codebase'}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
