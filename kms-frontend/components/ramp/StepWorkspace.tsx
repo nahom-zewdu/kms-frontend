@@ -136,8 +136,13 @@ function formatSource(s: SourceRef): string {
 }
 
 function githubTreeUrl(repo: string | null | undefined, path: string) {
-  if (!repo) return null;
-  return `https://github.com/${repo}/tree/HEAD/${path}`;
+  if (!repo || !path) return null;
+  return `https://github.com/${repo}/tree/HEAD/${path.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+function githubBlobUrl(repo: string | null | undefined, path: string) {
+  if (!repo || !path) return null;
+  return `https://github.com/${repo}/blob/HEAD/${path.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
@@ -314,11 +319,6 @@ export function StepWorkspace({
     'What should I understand before making changes?',
     'What does this code/file do?',
   ];
-
-  function githubBlobUrl(repo: string, path: string): string | null | undefined {
-    if (!repo || !path) return null;
-    return `https://github.com/${repo}/blob/${path}`;
-  }
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-10">
@@ -551,19 +551,49 @@ export function StepWorkspace({
         )}
 
         {(step.evidence || []).length > 0 && (
-          <section>
-            <h2 className="text-xs uppercase tracking-wide text-zinc-600 mb-3">
-              Evidence
-            </h2>
-            <ul className="space-y-1 text-xs font-mono text-zinc-600">
-              {(step.evidence || []).map((e, i) => (
-                <li key={i}>
-                  {e.source}
-                  {e.module_path ? ` · ${e.module_path}` : ''}
-                  {e.file_path ? ` · ${e.file_path}` : ''}
-                </li>
-              ))}
+          <section className="mb-10">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-xs uppercase tracking-wide text-zinc-600">
+                Supporting evidence
+              </h2>
+              <span className="text-[10px] text-zinc-600">
+                {(step.evidence || []).length} source{step.evidence?.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <ul className="space-y-2">
+              {(step.evidence || []).map((e, i) => {
+                const sourcePath = e.file_path || e.module_path;
+                const href = sourcePath ? githubBlobUrl(repo, sourcePath) : null;
+                return (
+                  <li key={e.record_id || `${e.source || 'evidence'}-${i}`} className="border border-zinc-800 bg-zinc-950/40 px-3 py-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                        {e.source || 'Repository evidence'}
+                      </span>
+                      {e.record_id && (
+                        <span className="text-[10px] font-mono text-zinc-700" title={e.record_id}>
+                          {e.record_id.slice(0, 12)}
+                        </span>
+                      )}
+                    </div>
+                    {sourcePath ? (
+                      href ? (
+                        <a href={href} target="_blank" rel="noreferrer" className="mt-1 block break-all text-xs font-mono text-zinc-300 underline underline-offset-4 hover:text-white">
+                          {sourcePath}
+                        </a>
+                      ) : (
+                        <p className="mt-1 break-all text-xs font-mono text-zinc-400">{sourcePath}</p>
+                      )
+                    ) : (
+                      <p className="mt-1 text-xs text-zinc-600">No source file path attached.</p>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
+            {!repo && (
+              <p className="mt-2 text-[11px] text-zinc-600">Source paths are shown, but GitHub links are unavailable because this step has no repository reference.</p>
+            )}
           </section>
         )}
       </div>
