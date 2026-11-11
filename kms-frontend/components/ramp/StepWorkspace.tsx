@@ -614,7 +614,7 @@ export function StepWorkspace({
                         <p className="mb-1 text-[10px] uppercase tracking-wide text-zinc-600">Issue acceptance checks</p>
                         <ul className="space-y-1 text-xs text-zinc-400">
                           {e.acceptance_checks.map((check, checkIndex) => (
-                            <li key={checkIndex} className="break-words">• {check.replace(/^[-*+]\\s+\\[[ xX]\\]\\s*/, '').replace(/^\\d+[.)]\\s*/, '')}</li>
+                            <li key={checkIndex} className="break-words">• {check.replace(/^[-*+]\s+\[[ xX]\]\s*/, '').replace(/^\d+[.)]\s*/, '')}</li>
                           ))}
                         </ul>
                       </div>
