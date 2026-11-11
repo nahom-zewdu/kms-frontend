@@ -12,6 +12,8 @@ type StepStatus = 'not_started' | 'in_progress' | 'completed';
 
 type Evidence = {
   source?: string;
+  label?: string;
+  detail?: string;
   module_path?: string;
   file_path?: string;
   record_id?: string;
@@ -588,6 +590,9 @@ export function StepWorkspace({
                         </span>
                       )}
                     </div>
+                    {e.label && (
+                      <p className="mt-1 text-sm text-zinc-200">{e.label}</p>
+                    )}
                     {sourcePath ? (
                       href ? (
                         <a href={href} target="_blank" rel="noreferrer" className="mt-1 block break-all text-xs font-mono text-zinc-300 underline underline-offset-4 hover:text-white">
