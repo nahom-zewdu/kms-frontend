@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
     const goUrl = process.env.GO_API_URL || 'http://localhost:9090';
     const query = new URLSearchParams({ repo: repoFullName, company_id: companyId });
-    const response = await fetch(`${goUrl.replace(/\\/+$/, '')}/github/sync-baseline?${query}`, {
+    const response = await fetch(`${goUrl.replace(/\/+$/, '')}/github/sync-baseline?${query}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${user.accessToken}` },
       cache: 'no-store',
