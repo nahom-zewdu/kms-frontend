@@ -273,7 +273,10 @@ export function StepWorkspace({
           context: buildStepContext(plan, step),
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.answer || data.error || `Knowledge request failed (${res.status}).`);
+      }
       setMessages((m) => [
         ...m,
         {
@@ -290,10 +293,13 @@ export function StepWorkspace({
           abstain_reason: data.abstain_reason || null,
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((m) => [
         ...m,
-        { role: 'assistant', content: 'Could not reach the knowledge service.' },
+        {
+          role: 'assistant',
+          content: error instanceof Error ? error.message : 'Could not reach the knowledge service.',
+        },
       ]);
     } finally {
       setLoading(false);
