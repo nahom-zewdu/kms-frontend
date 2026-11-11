@@ -597,7 +597,9 @@ export function StepWorkspace({
                     )}
                     {e.source === 'github_issue' && (
                       <p className={`mt-1 text-[11px] leading-relaxed ${e.live_status === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                        {e.live_status === 'verified' ? 'Live-checked with GitHub' : 'Not live-verified — confirm status and assignment before starting'}
+                        {e.live_status === 'verified'
+                          ? `Live-checked with GitHub · ${e.live_verified_at || 'recently'} (cached up to 5 min)`
+                          : 'Not live-verified — confirm status and assignment before starting'}
                       </p>
                     )}
                     {sourcePath ? (
