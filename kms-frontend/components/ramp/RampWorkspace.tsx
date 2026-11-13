@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 type StepStatus = 'not_started' | 'in_progress' | 'completed';
@@ -234,6 +234,27 @@ export function RampWorkspace({
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const [feedbackSummary, setFeedbackSummary] = useState<{
+    total: number;
+    ratings: Record<string, number>;
+    steps: Record<string, Record<string, number>>;
+  } | null>(null);
+  const planId = plan.id || plan.plan_id || '';
+
+  useEffect(() => {
+    let active = true;
+    if (!planId) return;
+    fetch(`/api/ramp-plans/${encodeURIComponent(planId)}/feedback-summary`)
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (active && data.summary) setFeedbackSummary(data.summary);
+      })
+      .catch(() => {
+        // Feedback analytics are an optional manager view; do not disrupt the engineer workspace.
+      });
+    return () => { active = false; };
+  }, [planId]);
 
   async function send(preset?: string) {
     const q = (preset ?? input).trim();
@@ -323,6 +344,52 @@ export function RampWorkspace({
             </div>
           )}
         </header>
+
+        {feedbackSummary && (
+          <section aria-labelledby="ramp-feedback-summary" className="mb-8 border border-zinc-800 bg-zinc-950/50 p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <div>
+                <h2 id="ramp-feedback-summary" className="text-sm font-medium text-zinc-100">
+                  Step usefulness
+                </h2>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Aggregate feedback from engineers in this company. Individual comments and identities are not shown.
+                </p>
+              </div>
+              <span className="text-xs tabular-nums text-zinc-400">{feedbackSummary.total} responses</span>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {([
+                ['useful', 'Useful'],
+                ['partially_useful', 'Partly useful'],
+                ['not_useful', 'Not useful'],
+              ] as const).map(([key, label]) => (
+                <div key={key} className="border border-zinc-800 p-3">
+                  <p className="text-[10px] uppercase tracking-wide text-zinc-600">{label}</p>
+                  <p className="mt-1 text-xl tabular-nums text-zinc-100">
+                    {feedbackSummary.ratings?.[key] || 0}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {Object.keys(feedbackSummary.steps || {}).length > 0 && (
+              <div className="mt-4 space-y-2">
+                {steps.filter((step) => feedbackSummary.steps[String(step.id)]).map((step) => {
+                  const counts = feedbackSummary.steps[String(step.id)];
+                  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+                  return (
+                    <div key={step.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="min-w-0 flex-1 truncate text-zinc-400">{step.title}</span>
+                      <span className="shrink-0 tabular-nums text-zinc-500">
+                        {counts.useful || 0} useful · {counts.partially_useful || 0} partial · {counts.not_useful || 0} not useful ({total})
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
         {steps.length === 0 ? (
           <p className="text-zinc-500">
