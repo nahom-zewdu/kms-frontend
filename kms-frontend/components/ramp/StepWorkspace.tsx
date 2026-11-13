@@ -5,7 +5,7 @@
 // The component fetches answers from an external API and displays them in the chat interface.
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 type StepStatus = 'not_started' | 'in_progress' | 'completed';
@@ -239,6 +239,55 @@ export function StepWorkspace({
   const [status, setStatus] = useState<StepStatus>(() => resolveStepStatus(step));
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedbackRating, setFeedbackRating] = useState<'useful' | 'partially_useful' | 'not_useful' | null>(null);
+  const [feedbackReason, setFeedbackReason] = useState('');
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
+  const [feedbackSaving, setFeedbackSaving] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/ramp-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/feedback`)
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error || 'Could not load feedback.');
+        if (!active || !data.feedback) return;
+        setFeedbackRating(data.feedback.rating || null);
+        setFeedbackReason(data.feedback.reason || '');
+      })
+      .catch((err) => {
+        if (active) setFeedbackError(err instanceof Error ? err.message : 'Could not load feedback.');
+      })
+      .finally(() => {
+        if (active) setFeedbackLoading(false);
+      });
+    return () => { active = false; };
+  }, [planId, stepId]);
+
+  async function saveFeedback() {
+    if (!feedbackRating || feedbackSaving) return;
+    setFeedbackSaving(true);
+    setFeedbackSaved(false);
+    setFeedbackError(null);
+    try {
+      const res = await fetch(
+        `/api/ramp-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/feedback`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating: feedbackRating, reason: feedbackReason }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Could not save feedback.');
+      setFeedbackSaved(true);
+    } catch (err) {
+      setFeedbackError(err instanceof Error ? err.message : 'Could not save feedback.');
+    } finally {
+      setFeedbackSaving(false);
+    }
+  }
   const endRef = useRef<HTMLDivElement>(null);
 
   async function updateStatus(nextStatus: StepStatus) {
@@ -415,6 +464,67 @@ export function StepWorkspace({
             </p>
           )}
         </header>
+
+        <section aria-labelledby="step-feedback-title" className="mb-10 border border-zinc-800 bg-zinc-950/50 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 id="step-feedback-title" className="text-sm font-medium text-zinc-100">
+                Was this step useful?
+              </h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Your feedback helps the team improve future onboarding paths.
+              </p>
+            </div>
+            {feedbackSaved && <span role="status" className="text-xs text-emerald-300">Feedback saved</span>}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {([
+              ['useful', 'Useful'],
+              ['partially_useful', 'Partly useful'],
+              ['not_useful', 'Not useful'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                disabled={feedbackLoading || feedbackSaving}
+                aria-pressed={feedbackRating === value}
+                onClick={() => { setFeedbackRating(value); setFeedbackSaved(false); }}
+                className={`border px-3 py-2 text-xs transition-colors disabled:opacity-50 ${
+                  feedbackRating === value
+                    ? 'border-zinc-200 bg-zinc-100 text-zinc-950'
+                    : 'border-zinc-700 text-zinc-300 hover:border-zinc-500'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label htmlFor="step-feedback-reason" className="mt-4 block text-xs text-zinc-500">
+            What worked or what was missing? <span className="text-zinc-600">(optional)</span>
+          </label>
+          <textarea
+            id="step-feedback-reason"
+            value={feedbackReason}
+            onChange={(event) => { setFeedbackReason(event.target.value); setFeedbackSaved(false); }}
+            maxLength={1000}
+            rows={3}
+            placeholder="Share a little context to help us improve this step."
+            className="kms-input mt-2 w-full resize-y"
+            disabled={feedbackLoading || feedbackSaving}
+          />
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-[11px] text-zinc-600">{feedbackReason.length}/1000</span>
+            <button
+              type="button"
+              onClick={saveFeedback}
+              disabled={!feedbackRating || feedbackLoading || feedbackSaving}
+              className="kms-btn-primary px-4 py-2 text-xs disabled:opacity-40"
+            >
+              {feedbackSaving ? 'Saving…' : 'Save feedback'}
+            </button>
+          </div>
+          {feedbackError && <p role="alert" className="mt-3 text-xs text-red-400">{feedbackError}</p>}
+        </section>
 
         <section className="mb-10">
           <h2 className="text-xs uppercase tracking-wide text-zinc-600 mb-3">
