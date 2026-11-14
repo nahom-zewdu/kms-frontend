@@ -29,3 +29,9 @@ The legacy `/onboard/[role]` page currently queries the public `playbooks` table
 - Public, role-only playbook sharing is intentionally disabled. A future public sharing feature must use an unguessable, revocable token with explicit expiry and a narrowly scoped read path; role slugs are not authorization credentials.
 - The current live audit found permissive public policies on `companies`, `entities`, and `playbooks`, plus self-service membership insert/update policies. The backend KRT migration must replace these policies and remove direct public grants.
 - Current data-integrity snapshot: 2 companies, 2 admin memberships, 422 entities, 611 edges, 153 raw records, 149 events, 237 codebase files, 96 modules. No null company IDs or cross-company edge endpoints were found in those tenant-bearing records. `contributions` is empty and lacks the `company_id` column expected by the current backend; this schema mismatch must be corrected before contribution metrics are relied upon.
+
+
+## OAuth and active-company follow-up hardening
+
+- Slack OAuth state is now HMAC-signed, time-limited, and bound to the initiating user/company. The callback verifies the current session and requires the initiating user to remain a company admin before writing the integration with the service-role client.
+- The active-company switch endpoint now requires authentication and verifies that the requested company is one of the user's memberships before setting the cookie.
