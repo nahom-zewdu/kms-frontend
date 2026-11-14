@@ -5,6 +5,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserContext } from '@/lib/auth';
 
+type JsonRecord = Record<string, unknown>;
+type ConversationMessage = { role: 'user' | 'assistant'; content: string };
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function parseJsonResponse(value: unknown) {
   if (!value || typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -39,17 +46,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const parsedBody: unknown = await request.json();
+    const body = isRecord(parsedBody) ? parsedBody : {};
     const question = (body.question || '').toString().trim();
     const companyId = (body.company_id || body.companyId || '').toString().trim();
     const context = (body.context || '').toString().trim();
-    const conversationHistory = Array.isArray(body.conversation_history)
+    const conversationHistory: ConversationMessage[] = Array.isArray(body.conversation_history)
       ? body.conversation_history
+          .filter((item: unknown): item is JsonRecord => isRecord(item))
+          .filter((item) => item.role === 'user' || item.role === 'assistant')
           .slice(-8)
-          .filter((item: any) => item && (item.role === 'user' || item.role === 'assistant'))
-          .map((item: any) => ({
-            role: item.role,
-            content: String(item.content || '').slice(0, 4000),
+          .map((item) => ({
+            role: item.role as ConversationMessage['role'],
+            content: typeof item.content === 'string' ? item.content.slice(0, 4000) : '',
           }))
       : [];
 
@@ -79,38 +88,39 @@ export async function POST(request: NextRequest) {
       throw new Error(`Backend query failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    let answer = data.answer;
-    let sources = data.sources || [];
-    let owners = data.owners || [];
-    let confidence = data.confidence;
-    let abstain_reason = data.abstain_reason ?? null;
+    const responseData: unknown = await response.json();
+    const data = isRecord(responseData) ? responseData : {};
+    let answer: unknown = data.answer;
+    let sources: unknown[] = Array.isArray(data.sources) ? data.sources : [];
+    let owners: unknown[] = Array.isArray(data.owners) ? data.owners : [];
+    let confidence: unknown = data.confidence;
+    let abstain_reason: unknown = data.abstain_reason ?? null;
 
     if (typeof answer === 'string') {
       const parsed = parseJsonResponse(answer);
-      if (parsed && typeof parsed === 'object') {
+      if (isRecord(parsed)) {
         answer = parsed.answer || parsed.response || answer;
-        sources = sources.length ? sources : parsed.sources || [];
-        owners = owners.length ? owners : parsed.owners || [];
+        sources = sources.length ? sources : Array.isArray(parsed.sources) ? parsed.sources : [];
+        owners = owners.length ? owners : Array.isArray(parsed.owners) ? parsed.owners : [];
         confidence = confidence || parsed.confidence;
         abstain_reason = abstain_reason ?? parsed.abstain_reason ?? null;
       }
     }
 
-    if (typeof answer === 'object' && answer !== null) {
-      sources = sources.length ? sources : (answer as any).sources || [];
-      owners = owners.length ? owners : (answer as any).owners || [];
-      confidence = confidence || (answer as any).confidence;
-      abstain_reason = abstain_reason ?? (answer as any).abstain_reason ?? null;
-      answer = (answer as any).answer || JSON.stringify(answer);
+    if (isRecord(answer)) {
+      sources = sources.length ? sources : Array.isArray(answer.sources) ? answer.sources : [];
+      owners = owners.length ? owners : Array.isArray(answer.owners) ? answer.owners : [];
+      confidence = confidence || answer.confidence;
+      abstain_reason = abstain_reason ?? answer.abstain_reason ?? null;
+      answer = answer.answer || JSON.stringify(answer);
     }
 
     return NextResponse.json({
-      answer: answer || "I don't have enough information yet.",
+      answer: typeof answer === 'string' && answer ? answer : "I don't have enough information yet.",
       sources,
       owners,
-      confidence: confidence || 'medium',
-      abstain_reason,
+      confidence: typeof confidence === 'string' ? confidence : 'medium',
+      abstain_reason: typeof abstain_reason === 'string' ? abstain_reason : null,
     });
   } catch (error) {
     console.error('Query API error:', error);
