@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   const repos = await listInstallationRepos(Number(integration.installation_id));
 
   return NextResponse.json({
-    repos: repos.map((r: any) => ({ ...r, watched: true })), // all installed repos are “watched”
+    repos: repos.map((repository) => ({ ...repository, watched: true })), // all installed repos are “watched”
     installation_id: integration.installation_id,
   });
 }
