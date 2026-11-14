@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface User {
   id: string;
@@ -12,16 +12,16 @@ export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     const res = await fetch('/api/users');
     const data = await res.json();
     setUsers(data.users || []);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     void fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const changeRole = async (userId: string, newRole: string) => {
     await fetch('/api/users/role', {
