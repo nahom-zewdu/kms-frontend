@@ -133,11 +133,16 @@ export async function listInstallationRepos(installationId: number) {
     }
   );
   if (!res.ok) return [];
-  const data = await res.json();
-  return (data.repositories || []).map((r: any) => ({
-    id: r.id,
-    full_name: r.full_name,
-    private: r.private,
-    description: r.description,
+  const data: { repositories?: Array<{
+    id: number;
+    full_name: string;
+    private: boolean;
+    description: string | null;
+  }> } = await res.json();
+  return (data.repositories || []).map((repository) => ({
+    id: repository.id,
+    full_name: repository.full_name,
+    private: repository.private,
+    description: repository.description,
   }));
 }
