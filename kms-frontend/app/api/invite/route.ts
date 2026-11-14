@@ -3,7 +3,6 @@
 // It checks if the user is an admin and generates an invite token for the specified email and role.
 
 import { requireRole } from '@/lib/permissions';
-import { createServerSupabase } from '@/lib/supabase-server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -13,8 +12,6 @@ export async function POST(request: Request) {
   }
 
   const { email, role } = await request.json();
-
-  const supabase = await createServerSupabase();
 
   // Create invite token (simple for MVP)
   const inviteToken = `invite_${Date.now()}`;
