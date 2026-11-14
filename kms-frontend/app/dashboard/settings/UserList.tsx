@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface User {
   id: string;
@@ -12,23 +12,41 @@ export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchUsers = useCallback(async () => {
-    const res = await fetch('/api/users');
-    const data = await res.json();
-    setUsers(data.users || []);
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    void fetchUsers();
-  }, [fetchUsers]);
+    let cancelled = false;
+
+    fetch('/api/users')
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to load users: ${response.status}`);
+        }
+        return response.json() as Promise<{ users?: User[] }>;
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setUsers(Array.isArray(data.users) ? data.users : []);
+          setLoading(false);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to load team members', error);
+        if (!cancelled) {
+          setUsers([]);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const changeRole = async (userId: string, newRole: string) => {
     await fetch('/api/users/role', {
       method: 'POST',
       body: JSON.stringify({ userId, role: newRole }),
     });
-    fetchUsers();
+    window.location.reload();
   };
 
   const removeUser = async (userId: string) => {
