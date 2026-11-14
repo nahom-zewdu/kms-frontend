@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     // Group into modules (top-level folders)
     type CodebaseFile = {
       file_path: string;
-      file_name: string;
+      file_name: string | null;
       language: string | null;
       last_author: string | null;
     };
     const moduleMap = new Map<string, CodebaseFile[]>();
 
-    files?.forEach((file: CodebaseFile) => {
+    files?.forEach((file) => {
       const parts = file.file_path.split('/');
       const moduleName = parts[0] || 'root';
 
