@@ -8,6 +8,8 @@
  */
 import { createHash, createPrivateKey, createSign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import pkg from '@next/env';
+const { loadEnvConfig } = pkg;
 
 loadEnvConfig(process.cwd());
 
@@ -44,7 +46,7 @@ function loadPrivateKey() {
 
 async function main() {
   const appId = process.env.GITHUB_APP_ID?.trim();
-  if (!appId || !/^\d+$/.test(appId)) {
+  if (!appId || !/^\\d+$/.test(appId)) {
     throw new Error('GITHUB_APP_ID must contain the numeric GitHub App ID.');
   }
 
