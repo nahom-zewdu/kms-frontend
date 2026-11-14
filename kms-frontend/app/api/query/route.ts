@@ -43,6 +43,15 @@ export async function POST(request: NextRequest) {
     const question = (body.question || '').toString().trim();
     const companyId = (body.company_id || body.companyId || '').toString().trim();
     const context = (body.context || '').toString().trim();
+    const conversationHistory = Array.isArray(body.conversation_history)
+      ? body.conversation_history
+          .slice(-8)
+          .filter((item: any) => item && (item.role === 'user' || item.role === 'assistant'))
+          .map((item: any) => ({
+            role: item.role,
+            content: String(item.content || '').slice(0, 4000),
+          }))
+      : [];
 
     if (!question) {
       return NextResponse.json({ answer: 'Please ask a question.' }, { status: 400 });
@@ -62,6 +71,7 @@ export async function POST(request: NextRequest) {
         question: question,
         company_id: companyId,
         context: context,
+        conversation_history: conversationHistory,
       }),
     });
 
