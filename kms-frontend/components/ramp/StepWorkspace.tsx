@@ -217,6 +217,7 @@ function buildStepContext(plan: Plan, step: Step): string {
         files: normalizeFiles(step.target?.files).map((file) => ({
           path: file.path,
           label: file.label,
+          repository_id: (step.target?.files || []).find((item) => typeof item === 'object' && item && item.path === file.path)?.repository_id || null,
         })),
       },
       owners: step.owners || [],
