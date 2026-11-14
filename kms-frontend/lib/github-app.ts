@@ -53,11 +53,22 @@ function getPrivateKey() {
 
 /** JWT for GitHub App authentication (valid ~9 minutes) */
 export function createAppJwt(): string {
-  const appId = process.env.GITHUB_APP_ID!;
+  // GitHub recommends the App Client ID as the JWT issuer. Keep the numeric
+  // App ID as a backwards-compatible fallback for existing deployments.
+  const issuer =
+    process.env.GITHUB_APP_CLIENT_ID?.trim() ||
+    process.env.GITHUB_APP_ID?.trim();
+
+  if (!issuer) {
+    throw new Error(
+      'GitHub App issuer is missing. Set GITHUB_APP_CLIENT_ID or GITHUB_APP_ID.'
+    );
+  }
+
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(
-    JSON.stringify({ iat: now - 60, exp: now + 9 * 60, iss: appId })
+    JSON.stringify({ iat: now - 60, exp: now + 9 * 60, iss: issuer })
   ).toString('base64url');
   const data = `${header}.${payload}`;
   const sign = createSign('RSA-SHA256');
