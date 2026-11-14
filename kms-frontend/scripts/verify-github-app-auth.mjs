@@ -8,9 +8,6 @@
  */
 import { createHash, createPrivateKey, createSign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import pkg from '@next/env';
-const { loadEnvConfig } = pkg;
-
 
 loadEnvConfig(process.cwd());
 
