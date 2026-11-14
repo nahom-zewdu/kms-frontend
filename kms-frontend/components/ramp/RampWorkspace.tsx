@@ -87,7 +87,7 @@ type Plan = {
   };
 };
 
-type SourceRef = string | { source?: string; record_id?: string };
+type SourceRef = string | { source?: string; record_id?: string; file_path?: string };
 
 type ChatMessage = {
   role: 'user' | 'assistant';
@@ -138,9 +138,18 @@ function riskClass(tier?: string) {
 
 function formatSource(s: SourceRef): string {
   if (typeof s === 'string') return s;
+  if (s.file_path) return s.file_path;
+  const labels: Record<string, string> = {
+    graph: 'Knowledge graph evidence',
+    github: 'GitHub activity',
+    raw: 'Indexed company context',
+    codebase_files: 'Indexed repository files',
+    ownership: 'Ownership records',
+    repositories: 'Connected repositories',
+    ramp_plans: 'Ramp plan',
+  };
   const src = s.source || 'source';
-  const id = s.record_id ? String(s.record_id).slice(0, 12) : '';
-  return id ? `${src}:${id}` : src;
+  return labels[src] || src.replaceAll('_', ' ');
 }
 
 function githubBlobUrl(repo: string | null | undefined, path: string | null | undefined, branch = 'HEAD') {
