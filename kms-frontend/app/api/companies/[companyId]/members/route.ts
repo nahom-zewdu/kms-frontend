@@ -33,14 +33,19 @@ export async function GET(
     `)
     .eq('company_id', companyId);
 
-  const members = (data || []).map((m: any) => ({
-    id: m.id,
-    user_id: m.user_id,
-    role: m.role,
-    is_owner: m.is_owner,
-    name: m.profiles?.name,
-    email: m.profiles?.email,
-  }));
+  const members = (data || []).map((member) => {
+    const profile = Array.isArray(member.profiles)
+      ? member.profiles[0]
+      : member.profiles;
+    return {
+      id: member.id,
+      user_id: member.user_id,
+      role: member.role,
+      is_owner: member.is_owner,
+      name: profile?.name,
+      email: profile?.email,
+    };
+  });
 
   return NextResponse.json({ members });
 }
