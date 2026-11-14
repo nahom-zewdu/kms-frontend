@@ -191,24 +191,28 @@ function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
 }
 
 function buildStepContext(plan: Plan, step: Step): string {
-  const path = step.target?.path || '';
-  const files = normalizeFiles(step.target?.files)
-    .slice(0, 6)
-    .map((file) => file.label)
-    .join(', ');
-  const owners = (step.owners || []).join(', ');
-  return [
-    `Ramp step context only (do not invent people or paths).`,
-    `Role: ${plan.role || 'unknown'}`,
-    `Step ${step.order}: ${step.title}`,
-    path ? `Path: ${path}` : '',
-    files ? `Files: ${files}` : '',
-    owners ? `Owners: ${owners}` : 'Owners: unknown',
-    step.risk_tier ? `Risk: ${step.risk_tier}` : '',
-    step.why ? `Why: ${step.why}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  return JSON.stringify({
+    schema_version: 1,
+    kind: 'ramp_step',
+    plan_id: plan.id || plan.plan_id || null,
+    role: plan.role || null,
+    active_step: {
+      id: step.id || null,
+      order: step.order,
+      title: step.title,
+      why: step.why || null,
+      target: {
+        type: step.target?.type || null,
+        path: step.target?.path || null,
+        repo: step.target?.repo || null,
+        files: normalizeFiles(step.target?.files).map((file) => ({
+          path: file.path,
+          label: file.label,
+        })),
+      },
+      owners: step.owners || [],
+    },
+  });
 }
 
 export function StepWorkspace({
@@ -336,6 +340,10 @@ export function StepWorkspace({
           question: q,
           company_id: companyId,
           context: buildStepContext(plan, step),
+          conversation_history: [
+            ...messages.slice(-8),
+            { role: 'user', content: q },
+          ],
         }),
       });
       const data = await res.json().catch(() => ({}));
