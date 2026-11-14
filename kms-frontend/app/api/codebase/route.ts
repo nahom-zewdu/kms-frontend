@@ -2,10 +2,10 @@
 // This API route fetches the codebase files from Supabase and transforms them into a structure suitable for React Flow visualization.
 // It groups files into modules based on their top-level folder and returns nodes representing both modules and individual files.
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get all files
     const { data: files } = await supabase
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       if (!moduleMap.has(moduleName)) {
         moduleMap.set(moduleName, []);
       }
-      moduleMap.get(moduleName).push(file);
+      moduleMap.get(moduleName)?.push(file);
     });
 
     // Transform to React Flow nodes
