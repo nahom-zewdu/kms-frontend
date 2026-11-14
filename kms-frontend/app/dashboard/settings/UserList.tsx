@@ -12,16 +12,16 @@ export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
     const res = await fetch('/api/users');
     const data = await res.json();
     setUsers(data.users || []);
     setLoading(false);
   };
+
+  useEffect(() => {
+    void fetchUsers();
+  }, []);
 
   const changeRole = async (userId: string, newRole: string) => {
     await fetch('/api/users/role', {
