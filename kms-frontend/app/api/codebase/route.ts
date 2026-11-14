@@ -6,8 +6,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
-  const role = request.nextUrl.searchParams.get('role') || '';
-
   try {
     // Get all files
     const { data: files } = await supabase
@@ -16,9 +14,15 @@ export async function GET(request: NextRequest) {
       .order('file_path');
 
     // Group into modules (top-level folders)
-    const moduleMap = new Map();
+    type CodebaseFile = {
+      file_path: string;
+      file_name: string;
+      language: string | null;
+      last_author: string | null;
+    };
+    const moduleMap = new Map<string, CodebaseFile[]>();
 
-    files?.forEach(file => {
+    files?.forEach((file: CodebaseFile) => {
       const parts = file.file_path.split('/');
       const moduleName = parts[0] || 'root';
 
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform to React Flow nodes
-    const nodes: any[] = [];
+    const nodes: Record<string, unknown>[] = [];
     let y = 0;
 
     moduleMap.forEach((filesInModule, moduleName) => {
@@ -49,7 +53,7 @@ export async function GET(request: NextRequest) {
       y += 140;
 
       // File nodes under module
-      filesInModule.forEach((file: any, idx: number) => {
+      filesInModule.forEach((file, idx) => {
         nodes.push({
           id: file.file_path,
           type: 'file',
