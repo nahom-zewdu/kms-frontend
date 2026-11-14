@@ -56,7 +56,7 @@ export function createAppJwt(): string {
   // GitHub App JWT authentication requires the numeric App ID as the issuer.
   const appId = process.env.GITHUB_APP_ID?.trim();
 
-  if (!appId || !/^\\d+$/.test(appId)) {
+  if (!appId || !/^\d+$/.test(appId)) {
     throw new Error('GITHUB_APP_ID must be configured as the numeric GitHub App ID.');
   }
 
