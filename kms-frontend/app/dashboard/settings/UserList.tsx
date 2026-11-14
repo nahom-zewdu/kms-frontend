@@ -51,11 +51,22 @@ export default function UserList() {
 
   const removeUser = async (userId: string) => {
     if (!confirm('Remove user?')) return;
-    await fetch('/api/users/remove', {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
-    });
-    fetchUsers();
+    try {
+      const response = await fetch('/api/users/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to remove user: ${response.status}`);
+      }
+
+      // Update local state instead of calling an undefined refresh helper.
+      setUsers((currentUsers) => currentUsers.filter((user) => user.id !== userId));
+    } catch (error) {
+      console.error('Failed to remove team member', error);
+    }
   };
 
   if (loading) return <div className="text-sm text-zinc-500">Loading team members...</div>;
