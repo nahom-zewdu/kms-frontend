@@ -3,7 +3,6 @@
 // It exchanges the authorization code for an access token and stores the integration details in the database.
 // It verifies that the user is authenticated and that the state parameter matches the expected value to prevent CSRF attacks.
 
-import { createServerSupabase } from '@/lib/supabase-server';
 import { createAdminSupabase } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
