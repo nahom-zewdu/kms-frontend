@@ -13,21 +13,30 @@ function getPrivateKey() {
     ? readFileSync(keyPath, 'utf8')
     : configuredKey || '';
 
-  // Support dotenv values with escaped newlines, CRLF files, and accidentally
-  // quoted values without ever logging the private key itself.
+  // Normalize dotenv-escaped newlines and optional wrapping quotes without
+  // logging or exposing the private key.
+  value = value.trim();
+
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1);
+  }
+
   value = value
-    .trim()
-    .replace(/^(['"])([\\s\\S]*)\\1$/, '$2')
-    .replace(/\\\\n/g, '\n')
-    .replace(/\\r\\n/g, '\n')
-    .replace(/\\r/g, '\n')
+    .replaceAll('\\r\\n', '\n')
+    .replaceAll('\\n', '\n')
+    .replaceAll('\\r', '\n')
     .trim();
 
-  // Some secret managers store the complete PEM as base64. Decode only when
-  // the value itself is not PEM and the decoded value clearly is.
-  if (!value.startsWith('-----BEGIN') && /^[A-Za-z0-9+/=\\s]+$/.test(value)) {
+  // Support a base64-encoded PEM only when decoding produces a private key.
+  if (!value.startsWith('-----BEGIN')) {
     const decoded = Buffer.from(value, 'base64').toString('utf8').trim();
-    if (decoded.startsWith('-----BEGIN') && decoded.includes('PRIVATE KEY-----')) {
+    if (
+      decoded.startsWith('-----BEGIN') &&
+      decoded.includes('PRIVATE KEY-----')
+    ) {
       value = decoded;
     }
   }
