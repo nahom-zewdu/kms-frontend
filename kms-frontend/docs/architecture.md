@@ -56,3 +56,12 @@
 - `profiles` table is written during signup with the admin client.
 - `SUPABASE_SERVICE_ROLE_KEY` is required for server-side profile creation when RLS is enabled.
 - Authenticated session retrieval uses server-side Supabase and `supabase.auth.getUser()`.
+
+
+## Tenant security boundary (KRT-00)
+
+- Request-scoped database reads use the cookie-backed SSR client and the authenticated Supabase session.
+- Tenant-owned reads must be constrained to a company present in `getUserContext().companies`; repository/file reads must also be filtered by repository IDs belonging to that company.
+- The admin client bypasses RLS and is used only in server route handlers after explicit membership and role checks.
+- Integration secrets remain server-only. Browser-facing routes return only non-secret integration metadata.
+- See `docs/security.md` for the KRT-00 access model and the remaining public-playbook exposure decision.
