@@ -6,7 +6,7 @@
  *
  * This script never prints the private key or generated JWT.
  */
-import { createHash, createPrivateKey, createSign } from 'node:crypto';
+import { createHash, createPrivateKey, createPublicKey, createSign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import pkg from '@next/env';
 const { loadEnvConfig } = pkg;
@@ -39,7 +39,7 @@ function loadPrivateKey() {
     throw new Error(`Expected an RSA private key; found ${key.asymmetricKeyType || 'unknown'}.`);
   }
 
-  const publicDer = key.export({ type: 'spki', format: 'der' });
+  const publicDer = createPublicKey(key).export({ type: 'spki', format: 'der' });
   const fingerprint = createHash('sha256').update(publicDer).digest('hex');
   return { key, source, fingerprint, modulusLength: key.asymmetricKeyDetails?.modulusLength };
 }
