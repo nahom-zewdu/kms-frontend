@@ -21,3 +21,11 @@
 ## Remaining audit item
 
 The legacy `/onboard/[role]` page currently queries the public `playbooks` table by role without a company or share-token constraint. The live database has a permissive public playbooks policy. Do not preserve that behavior as a tenant-safe public sharing mechanism: it can return another company's latest playbook. KRT-00 must either make this page authenticated and company-scoped or replace it with an explicitly designed, unguessable, revocable share-token flow before public playbook sharing is re-enabled.
+
+
+## Additional KRT-00 changes
+
+- Legacy `/onboard/[slug]` no longer queries the public anon client. It requires a verified session and filters playbooks by the active company and role.
+- Public, role-only playbook sharing is intentionally disabled. A future public sharing feature must use an unguessable, revocable token with explicit expiry and a narrowly scoped read path; role slugs are not authorization credentials.
+- The current live audit found permissive public policies on `companies`, `entities`, and `playbooks`, plus self-service membership insert/update policies. The backend KRT migration must replace these policies and remove direct public grants.
+- Current data-integrity snapshot: 2 companies, 2 admin memberships, 422 entities, 611 edges, 153 raw records, 149 events, 237 codebase files, 96 modules. No null company IDs or cross-company edge endpoints were found in those tenant-bearing records. `contributions` is empty and lacks the `company_id` column expected by the current backend; this schema mismatch must be corrected before contribution metrics are relied upon.
