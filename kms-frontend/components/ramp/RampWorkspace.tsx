@@ -183,28 +183,28 @@ function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
 }
 
 function buildRampContext(plan: Plan): string {
-  const steps = (plan.steps || [])
-    .slice(0, 8)
-    .map((s) => {
-      const path = s.target?.path ? ` path=${s.target.path}` : '';
-      const files = normalizeFiles(s.target?.files)
-        .slice(0, 3)
-        .map((file) => file.label)
-        .join(',');
-      const fileText = files ? ` files=${files}` : '';
-      const owners = s.owners?.length ? ` owners=${s.owners.join(',')}` : '';
-      return `${s.order}. ${s.title}${path}${fileText}${owners} risk=${s.risk_tier || 'review'}`;
-    })
-    .join('\n');
-
-  return [
-    `First-7-Days ramp role=${plan.role || 'unknown'}.`,
-    plan.employee_name ? `New hire: ${plan.employee_name}` : '',
-    'Steps (facts only — do not invent people or paths):',
-    steps || '(no steps)',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  return JSON.stringify({
+    schema_version: 1,
+    kind: 'ramp_overview',
+    plan_id: plan.id || plan.plan_id || null,
+    role: plan.role || null,
+    title: plan.title || null,
+    steps: (plan.steps || []).map((step) => ({
+      id: step.id || null,
+      order: step.order,
+      title: step.title,
+      target: {
+        type: step.target?.type || null,
+        path: step.target?.path || null,
+        repo: step.target?.repo || null,
+        files: normalizeFiles(step.target?.files).map((file) => ({
+          path: file.path,
+          label: file.label,
+        })),
+      },
+      owners: step.owners || [],
+    })),
+  });
 }
 
 export function RampWorkspace({
@@ -270,6 +270,10 @@ export function RampWorkspace({
           question: q,
           company_id: companyId,
           context: buildRampContext(plan),
+          conversation_history: [
+            ...messages.slice(-8),
+            { role: 'user', content: q },
+          ],
         }),
       });
       const data = await res.json().catch(() => ({}));
