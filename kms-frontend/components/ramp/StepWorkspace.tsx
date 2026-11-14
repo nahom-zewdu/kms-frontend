@@ -60,6 +60,7 @@ type NormalizedFile = {
   label: string;
   path: string;
   github_url?: string | null;
+  repository_id?: string | null;
 };
 
 type Step = {
@@ -181,6 +182,7 @@ function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
       path?: string | null;
       file_name?: string | null;
       github_url?: string | null;
+      repository_id?: string | null;
     };
     const path = typeof file.path === 'string' ? file.path.trim() : '';
     const fileName = typeof file.file_name === 'string' ? file.file_name.trim() : '';
@@ -194,6 +196,7 @@ function normalizeFiles(files?: FileRef[] | null): NormalizedFile[] {
         path: path || fileName || label,
         github_url:
           typeof file.github_url === 'string' && file.github_url.trim() ? file.github_url.trim() : null,
+        repository_id: typeof file.repository_id === 'string' ? file.repository_id : null,
       },
     ];
   });
@@ -217,7 +220,7 @@ function buildStepContext(plan: Plan, step: Step): string {
         files: normalizeFiles(step.target?.files).map((file) => ({
           path: file.path,
           label: file.label,
-          repository_id: (step.target?.files || []).find((item) => typeof item === 'object' && item && item.path === file.path)?.repository_id || null,
+          repository_id: file.repository_id || null,
         })),
       },
       owners: step.owners || [],
