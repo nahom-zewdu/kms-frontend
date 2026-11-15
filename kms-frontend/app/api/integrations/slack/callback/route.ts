@@ -1,9 +1,8 @@
-// app/api/integrations/slack/callback/route.ts
-// This is a server route that handles the callback from Slack's OAuth flow.
-// It exchanges the authorization code for an access token and stores the integration details in the database.
-// It verifies that the user is authenticated and that the state parameter matches the expected value to prevent CSRF attacks.
+// Verifies the signed, user-bound OAuth state before storing Slack credentials.
 
+import { getUserContext } from '@/lib/auth';
 import { createAdminSupabase } from '@/lib/supabase-admin';
+import { verifySlackOAuthState } from '@/lib/slack-oauth-state';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
@@ -11,43 +10,60 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const stateRaw = searchParams.get('state');
-  const error = searchParams.get('error');
+  const oauthError = searchParams.get('error');
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const cookieStore = await cookies();
 
-  if (error || !code || !stateRaw) {
+  if (oauthError || !code || !stateRaw) {
+    cookieStore.delete('slack_oauth_verifier');
+    cookieStore.delete('slack_oauth_state');
     return NextResponse.redirect(`${appUrl}/dashboard?error=slack_oauth_failed`);
   }
 
-  const cookieStore = await cookies();
   const storedState = cookieStore.get('slack_oauth_state')?.value;
   const codeVerifier = cookieStore.get('slack_oauth_verifier')?.value;
-
   if (!storedState || storedState !== stateRaw || !codeVerifier) {
     return NextResponse.redirect(`${appUrl}/dashboard?error=invalid_state`);
   }
 
-  let state: { companyId: string; userId: string };
+  const user = await getUserContext();
+  if (!user) return NextResponse.redirect(`${appUrl}/login?error=slack_unauthorized`);
+
+  let state;
   try {
-    state = JSON.parse(Buffer.from(stateRaw, 'base64url').toString());
+    state = verifySlackOAuthState(stateRaw, user.id);
   } catch {
     return NextResponse.redirect(`${appUrl}/dashboard?error=invalid_state`);
+  }
+
+  const membership = user.companies.find((company) => company.id === state.companyId);
+  if (!membership || membership.role !== 'admin') {
+    return NextResponse.redirect(`${appUrl}/dashboard?error=slack_forbidden`);
+  }
+
+  const clientId = process.env.SLACK_CLIENT_ID;
+  const clientSecret = process.env.SLACK_CLIENT_SECRET;
+  const redirectUri = process.env.SLACK_REDIRECT_URI;
+  if (!clientId || !clientSecret || !redirectUri) {
+    return NextResponse.redirect(`${appUrl}/dashboard/c/${state.companyId}/settings?error=slack_config`);
   }
 
   const tokenRes = await fetch('https://slack.com/api/oauth.v2.access', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: process.env.SLACK_CLIENT_ID!,
-      client_secret: process.env.SLACK_CLIENT_SECRET!,
+      client_id: clientId,
+      client_secret: clientSecret,
       code,
-      redirect_uri: process.env.SLACK_REDIRECT_URI!,
+      redirect_uri: redirectUri,
       code_verifier: codeVerifier,
     }),
+    cache: 'no-store',
   });
 
-  const tokenData = await tokenRes.json();
-  if (!tokenData.ok) {
-    console.error('Slack OAuth error:', tokenData);
+  const tokenData = await tokenRes.json().catch(() => ({}));
+  if (!tokenRes.ok || !tokenData.ok) {
+    console.error('Slack OAuth token exchange failed:', tokenData.error || tokenRes.status);
     return NextResponse.redirect(`${appUrl}/dashboard/c/${state.companyId}/settings?error=slack_token`);
   }
 
@@ -57,9 +73,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${appUrl}/dashboard/c/${state.companyId}/settings?error=slack_incomplete`);
   }
 
-  // Use admin client to bypass RLS for integration writes
   const supabase = createAdminSupabase();
-
   const { error: dbError } = await supabase
     .from('company_integrations')
     .upsert({
@@ -82,7 +96,7 @@ export async function GET(request: Request) {
   cookieStore.delete('slack_oauth_state');
 
   if (dbError) {
-    console.error('DB error:', dbError);
+    console.error('Slack integration persistence failed:', dbError.message);
     return NextResponse.redirect(`${appUrl}/dashboard/c/${state.companyId}/settings?error=db`);
   }
 
